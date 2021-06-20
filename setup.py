@@ -27,6 +27,8 @@ setup(
     python_requires='>=3.8',
     install_requires=[
         'jsonpath-ng',
+        'ruamel.yaml',
+        'yamlpath',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

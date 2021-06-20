@@ -29,9 +29,9 @@ find $PYENV_ROOT/versions -type f '(' -name '*.py[co]' -o -name '*.exe' ')' -exe
 
 RUN mv -v -- /python-versions.txt $PYENV_ROOT/version && \
     # only install certain versions for tox to use
-    pyenv local 3.8.8 && \
+    pyenv local 3.8.10 && \
     pyenv versions && \
-    pyenv global 3.8.8 && \
+    pyenv global 3.8.10 && \
     python -m pip install -U pip && \
     python -m pip install tox==3.14.0 && \
     pyenv rehash

@@ -4,15 +4,13 @@
 
 A utility to simplify the version bumping for git repos.
 
-## Overview
-
 This application is a rework of the famous `bumpversion` tool. The  
 [original repo](https://github.com/peritus/bumpversion) seems like abandoned. Several fundamental changes are
 introduced, which make the fork-and-extend approach infeasible:
 1. dropped Python 2 support
 2. boosted the test coverage to 95%+
-3. dropped many irrelevant feature to reduce complexity. (e.g. customized version component support)
-4. introduced JSON support to make it work for package-lock.json
+3. dropped many irrelevant features to reduce complexity. (e.g. customized version component support)
+4. introduced JSON support to make it work for package-lock.json, YAML support to make it work for Ansible plays
 5. narrowed the versioning scheme to semver-only
 
 ## Installation
@@ -23,8 +21,7 @@ pip3 install bumpsemver
 
 ## Usage
 
-This application supports both the CLI mode and config file mode. To maximum possible extent it is compatible with the 
-classical `bumpversion`.
+This application supports both the CLI mode and config file mode.
 
 ### Command Line Interface
 
@@ -33,7 +30,7 @@ bumpsemver [options] part [file]
 ```
     
 #### `options`
-_**[optional]**_<br />
+_**(optional)**_<br />
   
 Most of the configuration values described below can also be given as an option on the command-line.
 Additionally, the following options are available:
@@ -64,12 +61,12 @@ bumpsemver --current-version 0.5.1 minor src/VERSION
 ```
 
 #### `file`
-_**[optional]**_<br />
+_**(optional)**_<br />
 **default**: none
 
 The file that will be modified.
 
-If not given, the list of `[bumpversion:file:…]` sections from the configuration file will be used. If no files are
+If not given, the list of `[bumpsemver:file:…]` sections from the configuration file will be used. If no files are
 mentioned on the configuration file either, then no files will be modified.
 
 For example, bumping file `setup.py` from 1.1.9 to 2.0.0:
@@ -79,27 +76,23 @@ bumpsemver --current-version 1.1.9 major setup.py
 
 ### Configuration file
 
-It is mandatory for all the Sherlock CMI projects to use the configuration file with default name. By doing this, the
-command `bumpsemver part` without any parameter will bump the version number distributed at various places in a
-consistent manner.
-
 Options on the command line take precedence over those from the config file, which take precedence over those from the
 defaults.
 
 Example `.bumpsemver.cfg`:
 
 ```ini
-[bumpversion]
+[bumpsemver]
 current_version = 0.2.9
 commit = True
 tag = True
 
-[bumpversion:file:README]
+[bumpsemver:file:README]
 ```
 
 #### `.bumpsemver.cfg` -- Global configuration
 
-General configuration is grouped in a `[bumpversion]` section.
+General configuration is grouped in a `[bumpsemver]` section.
 
 ##### `current_version` 
 _**required**_<br />
@@ -110,7 +103,7 @@ The current version of the software package before bumping.
 Also available as CLI argument `--current-version` (e.g. `bumpsemver --current-version 0.5.1 patch`)
 
 ##### `tag = (True | False)`
-_**[optional]**_<br />
+_**(optional)**_<br />
 **default**: False (Don't create a git tag)
 
 Whether to create a git tag, that is the new version, prefixed with the character "`r`". Don't forget to `git-push`
@@ -119,7 +112,7 @@ with the `--tags` flag.
 Also available as CLI argument `--tag` or `--no-tag`.
 
 ##### `sign_tags = (True | False)`
-_**[optional]**_<br />
+_**(optional)**_<br />
 **default**: False (Don't sign tags)
 
 Whether to sign tags.
@@ -127,7 +120,7 @@ Whether to sign tags.
 Also available as CLI argument `--sign-tags` or `--no-sign-tags`.
 
 ##### `tag_name =`
-_**[optional]**_<br />
+_**(optional)**_<br />
 **default:** `v{new_version}`
 
 The name of the tag that will be created. Only valid when `tag = True`.
@@ -146,15 +139,15 @@ If neither tag message or sign tag is provided, we use a `lightweight` tag in gi
 git tag. Read more about Git tagging [here](https://git-scm.com/book/en/v2/Git-Basics-Tagging).
 
 ##### `commit = (True | False)`
-_**[optional]**_<br />
+_**(optional)**_<br />
 **default:** False (Don't create a commit)
 
-Whether to create a commit using git.
+Create a commit using git when true.
 
 Also available as CLI argument `--commit` or `--no-commit`.
 
 ##### `message =`
-_**[optional]**_<br />
+_**(optional)**_<br />
 **default:** `[OPS] bumped version: {current_version} → {new_version}`
 
 The commit message to use when creating a commit. Only valid when using `--commit` / `commit = True`.
@@ -171,19 +164,19 @@ In addition, it is also possible to provide a tag message by using CLI `--tag-me
 
 #### `.bumpsemver.cfg` -- File specific configuration
 
-This configuration is in the section: `[bumpversion:file:…]` or `[bumpversion:json:…]`
+This configuration is in the section: `[bumpsemver:file:…]` or `[bumpsemver:json:…]`
 
 Note: The configuration file format requires each section header to be unique. If you want to process a certain file
 multiple times (e.g. multiple location to be replaced separately), you may append a description between parens to the
-`file` keyword: `[bumpversion:file (special one):…]`. It does not matter what inside the parens, just make it unique.
+`file` keyword: `[bumpsemver:file (special one):…]`. It does not matter what inside the parens, just make it unique.
 e.g.
 
 ```ini
-[bumpversion:file(1):README.md]
+[bumpsemver:file(1):README.md]
 search = current version: {current_version}
 replace = current version: {new_version}
 
-[bumpversion:file(2):README.md]
+[bumpsemver:file(2):README.md]
 search = **Version: {current_version}**
 replace = current version: {new_version}
 ```
@@ -206,43 +199,63 @@ Given this `requirements.txt`:
 ```
 using the following `.bumpsemver.cfg` will ensure only the line containing `MyProject` will be changed:
 ```ini
-[bumpversion]
+[bumpsemver]
 current_version = 1.5.6
 
-[bumpversion:file:requirements.txt]
+[bumpsemver:file:requirements.txt]
 search = MyProject=={current_version}
 replace = MyProject=={new_version}
 ```
 
-With `[bumpversion:file:…]`, the specified file is processed as plain text file, which in fact makes this application
+With `[bumpsemver:file:…]`, the specified file is processed as plain text file, which in fact makes this application
 programming language neutral. However, it will be very error prone for complex file for example `package-lock.json`.
 
 For randomly sampled 30 projects written in node.js/TypeScript, the classical `bumpversion` or the renovated `bump2version` both made
-100% mistakes which changed something shouldn't be changed. There are too many "version": "1.2.3" in that file. To
-address this issue, `bumpsemver` added the support of json file.
+100% mistakes which changed something shouldn't be changed. A typical and relatively complex React projects contains 1000+ npm packages  
+indirectly. There are too many "version": "1.2.3" in that file. To address this issue, `bumpsemver` added the support of json file.
 
 To use it:
  ```ini
-[bumpversion:json:package-lock.json]
-version_key = version 
+[bumpsemver:json:package-lock.json]
+jsonpath = version 
 ```
 
-Value of the parameter `version_key` is a [JSONPath](https://goessner.net/articles/JsonPath/) string. For the typical
+Value of the parameter `jsonpath` is a [JSONPath](https://goessner.net/articles/JsonPath/) string. For the typical
 `package.json` or `package-lock.json`, using `version` or its jQuery-style alternative `$.version` is sufficient.
 Otherwise, anything can be selected with JSONPath is support, so, nothing we can't do. The underlying JSONPath processor
 is [jsonpath-ng](https://github.com/h2non/jsonpath-ng). Checkout their document for some examples and hints.
 
 The suffix is also supported for json file:
 ```ini
-[bumpversion:json(1):example.json]
-version_key = version
+[bumpsemver:json(1):example.json]
+jsonpath = version
 
-[bumpversion:json( same file):example.json]
-version_key = dependencies[2].*.version
+[bumpsemver:json( same file):example.json]
+jsonpath = dependencies[2].*.version
 
-[bumpversion:json (once again):example.json]
-version_key = dependencies[0].*.lodash.dependencies[1].version
+[bumpsemver:json (once again):example.json]
+jsonpath = dependencies[0].*.lodash.dependencies[1].version
 ```
+
+Comparably, YAML is supported for the same reason that we should support native JSON, like
+ ```ini
+[bumpsemver:yaml:playbook.yml]
+yamlpath = version 
+```
+OR
+```ini
+[bumpsemver:yaml(1):playbook.yml]
+yamlpath = *.vars.project_version
+
+[bumpsemver:yaml( same file):playbook.yaml]
+yamlpath = *.vars.version
+
+[bumpsemver:yaml (once again):playbook.yaml]
+yamlpath = *.vars.app_version
+```
+Please note that we use [yamlpath](https://github.com/wwkimball/yamlpath/wiki/Segments-of-a-YAML-Path#yaml-path-standard) instead of
+`jsonpath` here. `yamlpath` is not a popular "standard" widely adopted. For complex scenarios, it makes sense to test the expression with
+[yamlpath cli](https://pypi.org/project/yamlpath/) before putting anything in the config file.
 
 ## Test
 

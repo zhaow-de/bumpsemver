@@ -25,8 +25,7 @@ def test_version_part_bump():
 
 
 def test_version_part_format():
-    assert "{}".format(
-        VersionPart(vpc.first_value, vpc)) == vpc.first_value
+    assert f"{VersionPart(vpc.first_value, vpc)}" == vpc.first_value
 
 
 def test_version_part_equality():

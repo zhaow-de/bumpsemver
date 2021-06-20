@@ -4,9 +4,7 @@ import os
 import subprocess
 from tempfile import NamedTemporaryFile
 
-from bumpsemver.exceptions import (
-    WorkingDirectoryIsDirtyException,
-)
+from bumpsemver.exceptions import (WorkingDirectoryIsDirtyException)
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +18,11 @@ class Git:
             f.write(message.encode("utf-8"))
         env = os.environ.copy()
         for key in ("current_version", "new_version"):
-            env[str("BUMPVERSION_" + key.upper())] = str(context[key])
+            env[str("BUMPSEMVER_" + key.upper())] = str(context[key])
         try:
-            subprocess.check_output(
-                ["git", "commit", "-F", f.name] + extra_args, env=env
-            )
+            subprocess.check_output(["git", "commit", "-F", f.name] + extra_args, env=env)
         except subprocess.CalledProcessError as exc:
-            err_msg = "Failed to run {}: return code {}, output: {}".format(
-                exc.cmd, exc.returncode, exc.output
-            )
+            err_msg = f"Failed to run {exc.cmd}: return code {exc.returncode}, output: {exc.output}"
             logger.exception(err_msg)
             raise exc
         finally:
@@ -37,14 +31,7 @@ class Git:
     @classmethod
     def is_usable(cls):
         try:
-            return (
-                    subprocess.call(
-                        ["git", "rev-parse", "--git-dir"],
-                        stderr=subprocess.PIPE,
-                        stdout=subprocess.PIPE,
-                    )
-                    == 0
-            )
+            return subprocess.call(["git", "rev-parse", "--git-dir"], stderr=subprocess.PIPE, stdout=subprocess.PIPE) == 0
         except OSError as e:
             if e.errno in (errno.ENOENT, errno.EACCES):
                 return False
@@ -54,18 +41,12 @@ class Git:
     def assert_non_dirty(cls):
         lines = [
             line.strip()
-            for line in subprocess.check_output(
-                ["git", "status", "--porcelain"]
-            ).splitlines()
+            for line in subprocess.check_output(["git", "status", "--porcelain"]).splitlines()
             if not line.strip().startswith(b"??")
         ]
 
         if lines:
-            raise WorkingDirectoryIsDirtyException(
-                "Git working directory is not clean:\n{}".format(
-                    b"\n".join(lines).decode()
-                )
-            )
+            raise WorkingDirectoryIsDirtyException("Git working directory is not clean:\n{}".format(b"\n".join(lines).decode()))
 
     @classmethod
     def latest_tag_info(cls):

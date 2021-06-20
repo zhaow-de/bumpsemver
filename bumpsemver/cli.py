@@ -6,10 +6,7 @@ import re
 import sre_constants
 import sys
 import warnings
-from configparser import (
-    RawConfigParser,
-    NoOptionError,
-)
+from configparser import (RawConfigParser, NoOptionError)
 from datetime import datetime
 
 from bumpsemver import __version__, __title__
@@ -18,34 +15,39 @@ from bumpsemver.exceptions import (
     MissingValueForSerializationException,
     WorkingDirectoryIsDirtyException,
 )
+from bumpsemver.files.generic import ConfiguredGenericFile
+from bumpsemver.files.json import ConfiguredJSONFile
+from bumpsemver.files.yaml import ConfiguredYAMLFile
 from bumpsemver.git import Git
-from bumpsemver.utils import (
-    ConfiguredFile,
-    key_value_string,
-    ConfiguredJSONFile)
+from bumpsemver.utils import key_value_string
 from bumpsemver.version_part import VersionConfig
 
-DESCRIPTION = "{}: v{} (using Python v{})".format(
-    __title__,
-    __version__,
-    sys.version.split("\n")[0].split(" ")[0]
-)
+python_version = sys.version.split("\n")[0].split(" ")[0]
+DESCRIPTION = f"{__title__}: v{__version__} (using Python v{python_version})"
+
 
 # detect either:
-# bumpversion:json:value
-# bumpversion:json(suffix):value
-# bumpversion:json ( suffix with spaces):value
-# bumpversion:file:value
-# bumpversion:file(suffix):value
-# bumpversion:file ( suffix with spaces):value
+# bumpsemver:yaml:value
+# bumpsemver:yaml(suffix):value
+# bumpsemver:yaml ( suffix with spaces):value
+# bumpsemver:json:value
+# bumpsemver:json(suffix):value
+# bumpsemver:json ( suffix with spaces):value
+# bumpsemver:file:value
+# bumpsemver:file(suffix):value
+# bumpsemver:file ( suffix with spaces):value
 RE_DETECT_SECTION_TYPE = re.compile(
-    r"^bumpversion:"
-    r"((?P<file>file)(\s*\(\s*(?P<file_suffix>[^):]+)\)?)?|(?P<json>json)(\s*\(\s*(?P<json_suffix>[^):]+)\)?)?):"
-    r"(?P<value>.+)",
+    r"^bumpsemver:("
+    r"(?P<file>file)(\s*\(\s*(?P<file_suffix>[^):]+)\)?)?"
+    r"|"
+    r"(?P<json>json)(\s*\(\s*(?P<json_suffix>[^):]+)\)?)?"
+    r"|"
+    r"(?P<yaml>yaml)(\s*\(\s*(?P<yaml_suffix>[^):]+)\)?)?"
+    r"):(?P<value>.+)",
 )
 
 logger = logging.getLogger(__name__)
-time_context = {"now": datetime.now(), "utcnow": datetime.utcnow()}
+time_context = {'now': datetime.now(), 'utcnow': datetime.utcnow()}
 
 OPTIONAL_ARGUMENTS_THAT_TAKE_VALUES = [
     "--config-file",
@@ -60,10 +62,9 @@ OPTIONAL_ARGUMENTS_THAT_TAKE_VALUES = [
 
 
 def main(original_args=None):
-    # determine configuration based on command-line arguments
-    # and on-disk configuration files
-    args, known_args, root_parser, positionals = _parse_arguments_phase_1(
-        original_args)
+    #
+    # determine configuration based on command-line arguments and on-disk configuration files
+    args, known_args, root_parser, positionals = _parse_arguments_phase_1(original_args)
     _setup_logging(known_args.verbose)
     vcs_info = _determine_vcs_usability()
     defaults = _determine_current_version(vcs_info)
@@ -71,52 +72,35 @@ def main(original_args=None):
     if hasattr(known_args, "config_file"):
         explicit_config = known_args.config_file
     config_file = _determine_config_file(explicit_config)
-    config, config_file_exists, config_newlines, part_configs, files = \
-        _load_configuration(config_file, explicit_config, defaults)
-    known_args, parser2, remaining_argv = _parse_arguments_phase_2(
-        args, defaults, root_parser
-    )
+    config, config_file_exists, config_newlines, part_configs, files = _load_configuration(config_file, explicit_config, defaults)
+    known_args, parser2, remaining_argv = _parse_arguments_phase_2(args, defaults, root_parser)
     version_config = _setup_version_config(known_args, part_configs)
     current_version = version_config.parse(known_args.current_version)
     context = {**time_context, **vcs_info}
-
+    #
     # calculate the desired new version
-    new_version = _assemble_new_version(
-        context, current_version, defaults, known_args.current_version,
-        positionals, version_config
-    )
-    args, file_names = _parse_arguments_phase_3(remaining_argv, positionals,
-                                                defaults, parser2)
+    new_version = _assemble_new_version(context, current_version, defaults, known_args.current_version, positionals, version_config)
+    args, file_names = _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2)
     new_version = _parse_new_version(args, new_version, version_config)
 
     # replace version in target files
     vcs = _determine_vcs_dirty(defaults)
-    files.extend(
-        ConfiguredFile(file_name, version_config)
-        for file_name
-        in (file_names or positionals[1:])
-    )
+    files.extend(ConfiguredGenericFile(file_name, version_config) for file_name in (file_names or positionals[1:]))
     _check_files_contain_version(files, current_version, context)
-    _replace_version_in_files(files, current_version, new_version, args.dry_run,
-                              context)
-    config.remove_option("bumpversion", "new_version")
+    _replace_version_in_files(files, current_version, new_version, args.dry_run, context)
+    config.remove_option("bumpsemver", "new_version")
 
     # store the new version
-    _update_config_file(
-        config, config_file, config_newlines, config_file_exists,
-        args.new_version, args.dry_run,
-    )
+    _update_config_file(config, config_file, config_newlines, config_file_exists, args.new_version, args.dry_run)
 
     # commit and tag
     if vcs:
-        context = _commit_to_vcs(files, config_file, config_file_exists, vcs,
-                                 args, current_version, new_version)
+        context = _commit_to_vcs(files, config_file, config_file_exists, vcs, args, current_version, new_version)
         _tag_in_vcs(vcs, context, args)
 
 
 def split_args_in_optional_and_positional(args):
-    # manually parsing positional arguments because stupid argparse can't mix
-    # positional and optional arguments
+    # manually parsing positional arguments because stupid argparse can't mix positional and optional arguments
 
     positions = []
     for i, arg in enumerate(args):
@@ -126,9 +110,7 @@ def split_args_in_optional_and_positional(args):
         if i > 0:
             previous = args[i - 1]
 
-        if (not arg.startswith("-")) and (
-                previous not in OPTIONAL_ARGUMENTS_THAT_TAKE_VALUES
-        ):
+        if (not arg.startswith("-")) and (previous not in OPTIONAL_ARGUMENTS_THAT_TAKE_VALUES):
             positions.append(i)
 
     positionals = [arg for i, arg in enumerate(args) if i in positions]
@@ -138,13 +120,10 @@ def split_args_in_optional_and_positional(args):
 
 
 def _parse_arguments_phase_1(original_args):
-    positionals, args = split_args_in_optional_and_positional(
-        sys.argv[1:] if original_args is None else original_args
-    )
+    positionals, args = split_args_in_optional_and_positional(sys.argv[1:] if original_args is None else original_args)
     if len(positionals[1:]) > 2:
         warnings.warn(
-            "Giving multiple files on the command line will be deprecated, "
-            "please use [bumpversion:file:...] in a config file.",
+            "Giving multiple files on the command line will be deprecated, please use [bumpsemver:file:...] in a config file.",
             PendingDeprecationWarning,
         )
     root_parser = argparse.ArgumentParser(add_help=False)
@@ -153,8 +132,7 @@ def _parse_arguments_phase_1(original_args):
         metavar="FILE",
         default=argparse.SUPPRESS,
         required=False,
-        help="Config file to read most of the variables from"
-             " (default: .bumpsemver.cfg)",
+        help="Config file to read most of the variables from (default: .bumpsemver.cfg)",
     )
     root_parser.add_argument(
         "--verbose",
@@ -179,9 +157,9 @@ def _setup_logging(verbose):
         log_level = [logging.WARNING, logging.INFO, logging.DEBUG][verbose]
     except IndexError:
         log_level = logging.DEBUG
-    root_logger = logging.getLogger('')
+    root_logger = logging.getLogger("")
     root_logger.setLevel(log_level)
-    logger.debug("Starting %s", DESCRIPTION)
+    logger.debug(f"Starting {DESCRIPTION}")
 
 
 def _determine_vcs_usability():
@@ -205,20 +183,21 @@ def _determine_config_file(explicit_config):
 
 
 def _load_configuration(config_file, explicit_config, defaults):
+    # noinspection PyTypeChecker
     config = RawConfigParser("")
     # don't transform keys to lowercase (which would be the default)
     config.optionxform = lambda option: option
-    config.add_section("bumpversion")
+    config.add_section("bumpsemver")
     config_file_exists = os.path.exists(config_file)
 
     if not config_file_exists:
-        message = "Could not read config file at {}".format(config_file)
+        message = f"Could not read config file at {config_file}"
         if explicit_config:
             raise argparse.ArgumentTypeError(message)
         logger.info(message)
         return config, config_file_exists, None, {}, []
 
-    logger.info("Reading config file %s:", config_file)
+    logger.info(f"Reading config file {config_file}:")
 
     with open(config_file, "rt", encoding="utf-8") as config_fp:
         config_content = config_fp.read()
@@ -229,22 +208,19 @@ def _load_configuration(config_file, explicit_config, defaults):
     log_config = io.StringIO()
     config.write(log_config)
 
-    if config.has_option("bumpversion", "files"):
+    if config.has_option("bumpsemver", "files"):
         warnings.warn(
-            "'files =' configuration will be deprecated,"
-            " please use [bumpversion:file:...]",
+            "'files =' configuration will be deprecated, please use [bumpsemver:file:...]",
             PendingDeprecationWarning,
         )
 
-    defaults.update(dict(config.items("bumpversion")))
+    defaults.update(dict(config.items("bumpsemver")))
 
-    for boolvaluename in ("commit", "tag", "dry_run"):
+    for bool_value_name in ("commit", "tag", "dry_run"):
         try:
-            defaults[boolvaluename] = config.getboolean(
-                "bumpversion", boolvaluename
-            )
+            defaults[bool_value_name] = config.getboolean("bumpsemver", bool_value_name)
         except NoOptionError:
-            pass  # no default value then ;)
+            pass  # no default value then
 
     part_configs = {}
     files = []
@@ -259,38 +235,31 @@ def _load_configuration(config_file, explicit_config, defaults):
         section_value = section_type.get("value")
         section_config = dict(config.items(section_name))
 
-        if section_type.get("file") or section_type.get("json"):
-            filename = section_value
+        filename = section_value
 
-            section_config["part_configs"] = part_configs
+        section_config["part_configs"] = part_configs
 
+        if section_type.get("file"):
             if "search" not in section_config:
-                section_config["search"] = defaults.get(
-                    "search", "{current_version}"
-                )
-
+                section_config["search"] = defaults.get("search", "{current_version}")
             if "replace" not in section_config:
-                section_config["replace"] = defaults.get("replace",
-                                                         "{new_version}")
-
-            if section_type.get("file"):
-                files.append(
-                    ConfiguredFile(filename, VersionConfig(**section_config)))
-            elif section_type.get("json"):
-                version_key = section_config.pop('version_key',
-                                                 defaults.get('version_key',
-                                                              'version'))
-                files.append(ConfiguredJSONFile(filename, version_key,
-                                                VersionConfig(
-                                                    **section_config)))
+                section_config["replace"] = defaults.get("replace", "{new_version}")
+            files.append(ConfiguredGenericFile(filename, VersionConfig(**section_config)))
+        elif section_type.get("json"):
+            jsonpath = section_config.pop('jsonpath', defaults.get('jsonpath', 'version'))
+            files.append(ConfiguredJSONFile(filename, jsonpath, VersionConfig(**section_config)))
+        elif section_type.get("yaml"):
+            yamlpath = section_config.pop('yamlpath', defaults.get('yamlpath', 'version'))
+            files.append(ConfiguredYAMLFile(filename, yamlpath, VersionConfig(**section_config)))
+        else:
+            # the other cases must not be possible, because the regex matching at the beginning of this function should filter them out
+            pass
 
     return config, config_file_exists, config_newlines, part_configs, files
 
 
 def _parse_arguments_phase_2(args, defaults, root_parser):
-    parser2 = argparse.ArgumentParser(
-        prog="bumpsemver", add_help=False, parents=[root_parser]
-    )
+    parser2 = argparse.ArgumentParser(prog="bumpsemver", add_help=False, parents=[root_parser])
     parser2.set_defaults(**defaults)
     parser2.add_argument(
         "--current-version",
@@ -319,37 +288,25 @@ def _parse_arguments_phase_2(args, defaults, root_parser):
 
 def _setup_version_config(known_args, part_configs):
     try:
-        version_config = VersionConfig(
-            search=known_args.search,
-            replace=known_args.replace,
-            part_configs=part_configs,
-        )
+        version_config = VersionConfig(search=known_args.search, replace=known_args.replace, part_configs=part_configs)
     except sre_constants.error:
         sys.exit(1)
     return version_config
 
 
-def _assemble_new_version(
-        context, current_version, defaults, arg_current_version, positionals,
-        version_config
-):
+def _assemble_new_version(context, current_version, defaults, arg_current_version, positionals, version_config):
     new_version = None
     if "new_version" not in defaults and arg_current_version:
         try:
             if current_version and positionals:
-                logger.info("Attempting to increment part '%s'", positionals[0])
-                new_version = current_version.bump(positionals[0],
-                                                   version_config.order())
-                logger.info("Values are now: %s",
-                            key_value_string(new_version.values))
-                defaults["new_version"] = version_config.serialize(new_version,
-                                                                   context)
+                logger.info(f"Attempting to increment part '{positionals[0]}'")
+                new_version = current_version.bump(positionals[0], version_config.order())
+                logger.info(f"Values are now: {key_value_string(new_version.values)}")
+                defaults["new_version"] = version_config.serialize(new_version, context)
         except MissingValueForSerializationException as e:
-            logger.info("Opportunistic finding of new_version failed: %s",
-                        e.message)
+            logger.info(f"Opportunistic finding of new_version failed: {e.message}")
         except IncompleteVersionRepresentationException as e:
-            logger.info("Opportunistic finding of new_version failed: %s",
-                        e.message)
+            logger.info(f"Opportunistic finding of new_version failed: {e.message}")
         except KeyError:
             logger.info("Opportunistic finding of new_version failed")
     return new_version
@@ -382,45 +339,45 @@ def _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2):
         help="New version that should be in the files",
         required="new_version" not in defaults,
     )
-    commitgroup = parser3.add_mutually_exclusive_group()
-    commitgroup.add_argument(
+    commit_group = parser3.add_mutually_exclusive_group()
+    commit_group.add_argument(
         "--commit",
         action="store_true",
         dest="commit",
         help="Commit to version control",
         default=defaults.get("commit", False),
     )
-    commitgroup.add_argument(
+    commit_group.add_argument(
         "--no-commit",
         action="store_false",
         dest="commit",
         help="Do not commit to version control",
         default=argparse.SUPPRESS,
     )
-    taggroup = parser3.add_mutually_exclusive_group()
-    taggroup.add_argument(
+    tag_group = parser3.add_mutually_exclusive_group()
+    tag_group.add_argument(
         "--tag",
         action="store_true",
         dest="tag",
         default=defaults.get("tag", False),
         help="Create a tag in version control",
     )
-    taggroup.add_argument(
+    tag_group.add_argument(
         "--no-tag",
         action="store_false",
         dest="tag",
         help="Do not create a tag in version control",
         default=argparse.SUPPRESS,
     )
-    signtagsgroup = parser3.add_mutually_exclusive_group()
-    signtagsgroup.add_argument(
+    sign_tags_group = parser3.add_mutually_exclusive_group()
+    sign_tags_group.add_argument(
         "--sign-tags",
         action="store_true",
         dest="sign_tags",
         help="Sign tags if created",
         default=defaults.get("sign_tags", False),
     )
-    signtagsgroup.add_argument(
+    sign_tags_group.add_argument(
         "--no-sign-tags",
         action="store_false",
         dest="sign_tags",
@@ -471,7 +428,7 @@ def _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2):
 def _parse_new_version(args, new_version, vc):
     if args.new_version:
         new_version = vc.parse(args.new_version)
-    logger.info("New version will be '%s'", args.new_version)
+    logger.info(f"New version will be '{args.new_version}'")
     return new_version
 
 
@@ -485,11 +442,7 @@ def _determine_vcs_dirty(defaults):
         if defaults["allow_dirty"]:
             return None
         else:
-            logger.warning(
-                "%s\n\nUse --allow-dirty to override this"
-                " if you know what you're doing.",
-                e.message,
-            )
+            logger.warning(f"{e.message}\n\nUse --allow-dirty to override this if you know what you're doing.")
             raise
 
     return Git
@@ -497,73 +450,48 @@ def _determine_vcs_dirty(defaults):
 
 def _check_files_contain_version(files, current_version, context):
     # make sure files exist and contain version string
-    logger.info(
-        "Asserting files %s contain the version string...",
-        ", ".join([str(f) for f in files]),
-    )
+    logger.info(f"Asserting files {', '.join([str(f) for f in files])} contain the version string...")
     for f in files:
         f.should_contain_version(current_version, context)
 
 
-def _replace_version_in_files(files, current_version, new_version, dry_run,
-                              context):
+def _replace_version_in_files(files, current_version, new_version, dry_run, context):
     # change version string in files
     for f in files:
         f.replace(current_version, new_version, context, dry_run)
 
 
-def _update_config_file(
-        config, config_file, config_newlines, config_file_exists, new_version,
-        dry_run,
-):
-    config.set("bumpversion", "current_version", new_version)
+def _update_config_file(config, config_file, config_newlines, config_file_exists, new_version, dry_run):
+    config.set("bumpsemver", "current_version", new_version)
     new_config = io.StringIO()
     try:
         write_to_config_file = (not dry_run) and config_file_exists
 
-        logger.info(
-            "%s to config file %s:",
-            "Would write" if not write_to_config_file else "Writing",
-            config_file,
-        )
+        logger.info(f"{'Would write' if not write_to_config_file else 'Writing'} to config file {config_file}:")
 
         config.write(new_config)
         logger.info(new_config.getvalue())
 
         if write_to_config_file:
-            with open(config_file, "wt", encoding="utf-8",
-                      newline=config_newlines) as f:
+            with open(config_file, "wt", encoding="utf-8", newline=config_newlines) as f:
                 f.write(new_config.getvalue().strip() + "\n")
 
     except UnicodeEncodeError:
         warnings.warn(
-            "Unable to write UTF-8 to config file, because of an old"
-            " configparser version. Update with"
-            " `pip install --upgrade configparser`."
+            "Unable to write UTF-8 to config file, because of an old configparser version. "
+            "Update with `pip install --upgrade configparser`."
         )
 
 
-def _commit_to_vcs(files, config_file, config_file_exists, vcs, args,
-                   current_version, new_version):
+def _commit_to_vcs(files, config_file, config_file_exists, vcs, args, current_version, new_version):
     commit_files = [f.path for f in files]
     if config_file_exists:
         commit_files.append(config_file)
-    assert vcs.is_usable(), "Did find '{}' unusable, unable to commit.".format(
-        vcs.__name__
-    )
+    assert vcs.is_usable(), f"Did find '{vcs.__name__}' unusable, unable to commit."
     do_commit = args.commit and not args.dry_run
-    logger.info(
-        "%s %s commit",
-        "Would prepare" if not do_commit else "Preparing",
-        vcs.__name__,
-    )
+    logger.info(f"{'Would prepare' if not do_commit else 'Preparing'} {vcs.__name__} commit")
     for path in commit_files:
-        logger.info(
-            "%s changes in file '%s' to %s",
-            "Would add" if not do_commit else "Adding",
-            path,
-            vcs.__name__,
-        )
+        logger.info(f"{'Would add' if not do_commit else 'Adding'} changes in file '{path}' to {vcs.__name__}")
 
         if do_commit:
             vcs.add_path(path)
@@ -573,24 +501,14 @@ def _commit_to_vcs(files, config_file, config_file_exists, vcs, args,
         "new_version": args.new_version,
     }
     context.update(time_context)
-    context.update({'current_' + part: current_version[part].value for part in
-                    current_version})
-    context.update(
-        {'new_' + part: new_version[part].value for part in new_version})
+    context.update({f"current_{part}": current_version[part].value for part in current_version})
+    context.update({f"new_{part}": new_version[part].value for part in new_version})
 
     commit_message = args.message.format(**context)
 
-    logger.info(
-        "%s to %s with message '%s'",
-        "Would commit" if not do_commit else "Committing",
-        vcs.__name__,
-        commit_message,
-    )
+    logger.info(f"{'Would commit' if not do_commit else 'Committing'} to {vcs.__name__} with message '{commit_message}'")
     if do_commit:
-        vcs.commit(
-            message=commit_message,
-            context=context,
-        )
+        vcs.commit(message=commit_message, context=context)
     return context
 
 
@@ -599,14 +517,8 @@ def _tag_in_vcs(vcs, context, args):
     tag_name = args.tag_name.format(**context)
     tag_message = args.tag_message.format(**context)
     do_tag = args.tag and not args.dry_run
-    logger.info(
-        "%s '%s' %s in %s and %s",
-        "Would tag" if not do_tag else "Tagging",
-        tag_name,
-        "with message '{}'".format(
-            tag_message) if tag_message else "without message",
-        vcs.__name__,
-        "signing" if sign_tags else "not signing",
-    )
+    logger.info(f"{'Would tag' if not do_tag else 'Tagging'} `{tag_name}` "
+                f"{f'with message `{tag_message}`' if tag_message else 'without message'} "
+                f"in {vcs.__name__} and {'signing' if sign_tags else 'not signing'}")
     if do_tag:
         vcs.tag(sign_tags, tag_name, tag_message)

@@ -11,7 +11,7 @@ with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='bumpsemver',
-    version='1.0.1',
+    version='1.0.2',
     url='https://github.com/zhaow-de/bumpsemver',
     author='Zhao Wang',
     author_email='zhaow.km@gmail.com',

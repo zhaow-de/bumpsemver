@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 DESCRIPTION = 'Bump semver for git repos with a single command.'
 
@@ -15,7 +15,7 @@ setup(
     url='https://github.com/zhaow-de/bumpsemver',
     author='Zhao Wang',
     author_email='zhaow.km@gmail.com',
-    packages=['bumpsemver'],
+    packages=find_packages(),
     description=DESCRIPTION,
     long_description=long_description,
     long_description_content_type='text/markdown',

@@ -1,6 +1,6 @@
 # bumpsemver
 
-**Current version: 1.0.0**
+**Current version: 1.0.1**
 
 A utility to simplify the version bumping for git repos.
 

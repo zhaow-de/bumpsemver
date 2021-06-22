@@ -18,6 +18,7 @@ class NumericFunction:
             try:
                 _, _, _ = self.FIRST_NUMERIC.search(first_value).groups()
             except AttributeError:
+                # pylint: disable=raise-missing-from
                 raise ValueError(f"The given first value {first_value} does not contain any digit")
         else:
             first_value = 0

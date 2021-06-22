@@ -1,10 +1,12 @@
-from textwrap import dedent
+# pylint: skip-file
 
 # noinspection PyPackageRequirements
 import pytest
-from ruamel.yaml import YAML
 # noinspection PyPackageRequirements
 from testfixtures import LogCapture
+
+from textwrap import dedent
+from ruamel.yaml import YAML
 
 from bumpsemver import exceptions
 from bumpsemver.cli import main

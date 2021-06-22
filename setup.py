@@ -1,7 +1,7 @@
 import os
 from setuptools import setup
 
-description = 'Bump semver for git repos with a single command.'
+DESCRIPTION = 'Bump semver for git repos with a single command.'
 
 # Import the README and use it as the long-description.
 # This requires 'README.md' to be present in MANIFEST.in.
@@ -16,7 +16,7 @@ setup(
     author='Zhao Wang',
     author_email='zhaow.km@gmail.com',
     packages=['bumpsemver'],
-    description=description,
+    description=DESCRIPTION,
     long_description=long_description,
     long_description_content_type='text/markdown',
     entry_points={

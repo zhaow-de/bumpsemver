@@ -6,16 +6,19 @@ class BumpVersionException(Exception):
 
 class IncompleteVersionRepresentationException(BumpVersionException):
     def __init__(self, message):
+        super().__init__(message)
         self.message = message
 
 
 class MissingValueForSerializationException(BumpVersionException):
     def __init__(self, message):
+        super().__init__(message)
         self.message = message
 
 
 class WorkingDirectoryIsDirtyException(BumpVersionException):
     def __init__(self, message):
+        super().__init__(message)
         self.message = message
 
 

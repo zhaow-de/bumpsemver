@@ -1,14 +1,12 @@
-from bumpsemver.version_part import (
-    NumericVersionPartConfiguration,
-    VersionPart,
-)
+# pylint: skip-file
+
+from bumpsemver.version_part import (NumericVersionPartConfiguration, VersionPart)
 
 vpc = NumericVersionPartConfiguration()
 
 
 def test_version_part_init():
-    assert VersionPart(
-        vpc.first_value, vpc).value == vpc.first_value
+    assert VersionPart(vpc.first_value, vpc).value == vpc.first_value
 
 
 def test_version_part_copy():
@@ -29,10 +27,8 @@ def test_version_part_format():
 
 
 def test_version_part_equality():
-    assert VersionPart(vpc.first_value, vpc) == VersionPart(
-        vpc.first_value, vpc)
+    assert VersionPart(vpc.first_value, vpc) == VersionPart(vpc.first_value, vpc)
 
 
 def test_version_part_null():
-    assert VersionPart(vpc.first_value, vpc).null() == VersionPart(
-        vpc.first_value, vpc)
+    assert VersionPart(vpc.first_value, vpc).null() == VersionPart(vpc.first_value, vpc)

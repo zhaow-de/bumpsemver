@@ -1,1 +1,1 @@
-# dummy
+# pylint: skip-file

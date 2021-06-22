@@ -1,0 +1,113 @@
+[MASTER]
+
+jobs=0
+
+[MESSAGES CONTROL]
+
+disable=duplicate-code,
+        logging-fstring-interpolation,
+        missing-class-docstring,
+        missing-function-docstring,
+        missing-module-docstring,
+        too-many-branches,
+        too-many-locals
+
+[REPORTS]
+
+output-format=colorized
+reports=yes
+score=yes
+
+
+[REFACTORING]
+
+max-nested-blocks=5
+never-returning-functions=sys.exit
+
+
+[LOGGING]
+
+logging-format-style=new
+logging-modules=logging
+
+
+[SPELLING]
+
+max-spelling-suggestions=4
+
+[FORMAT]
+
+expected-line-ending-format=LF
+
+indent-after-paren=4
+indent-string='    '
+max-line-length=138
+max-module-lines=1000
+no-space-check=trailing-comma,
+               dict-separator
+
+single-line-class-stmt=no
+single-line-if-stmt=no
+
+
+[BASIC]
+
+argument-naming-style=snake_case
+attr-naming-style=snake_case
+class-naming-style=PascalCase
+const-naming-style=UPPER_CASE
+docstring-min-length=-1
+function-naming-style=snake_case
+good-names=f,
+           i,
+           j,
+           k,
+           ex,
+           Run,
+           _
+include-naming-hint=no
+inlinevar-naming-style=any
+method-naming-style=snake_case
+module-naming-style=snake_case
+property-classes=abc.abstractproperty
+variable-naming-style=snake_case
+
+[STRING]
+
+check-quote-consistency=yes
+check-str-concat-over-line-jumps=no
+
+
+[IMPORTS]
+
+allow-wildcard-with-all=no
+analyse-fallback-blocks=no
+deprecated-modules=optparse,tkinter.tix
+known-third-party=enchant
+
+
+[CLASSES]
+defining-attr-methods=__init__,
+                      __new__,
+                      setUp,
+                      __post_init__
+exclude-protected=_asdict,
+                  _fields,
+                  _replace,
+                  _source,
+                  _make
+valid-classmethod-first-arg=cls
+valid-metaclass-classmethod-first-arg=cls
+
+
+[DESIGN]
+
+max-args=8
+max-attributes=7
+max-bool-expr=5
+max-branches=12
+max-parents=7
+max-public-methods=20
+max-returns=6
+max-statements=50
+min-public-methods=1

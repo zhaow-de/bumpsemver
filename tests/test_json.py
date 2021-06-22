@@ -1,10 +1,12 @@
-import json
-from textwrap import dedent
+# pylint: skip-file
 
 # noinspection PyPackageRequirements
 import pytest
 # noinspection PyPackageRequirements
 from testfixtures import LogCapture
+
+import json
+from textwrap import dedent
 
 from bumpsemver import exceptions
 from bumpsemver.cli import main

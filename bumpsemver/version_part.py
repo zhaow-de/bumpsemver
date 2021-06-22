@@ -145,11 +145,11 @@ class VersionConfig:
         for key, value in match.groupdict().items():
             _parsed[key] = VersionPart(value, self.part_configs.get(key))
 
-        v = Version(_parsed, version_string)
+        version = Version(_parsed, version_string)
 
-        logger.info(f"Parsed the following values: {key_value_string(v.values)}")
+        logger.info(f"Parsed the following values: {key_value_string(version.values)}")
 
-        return v
+        return version
 
     def _serialize(self, version, serialize_format, context, raise_if_incomplete=False):
         """
@@ -158,29 +158,30 @@ class VersionConfig:
         Raises MissingValueForSerializationException if not serializable
         """
         values = context.copy()
-        for k in version:
-            values[k] = version[k]
+        for key in version:
+            values[key] = version[key]
 
         try:
             # test whether all parts required in the format have values
             serialized = serialize_format.format(**values)
 
-        except KeyError as e:
-            missing_key = getattr(e, "message", e.args[0])
+        except KeyError as err:
+            missing_key = getattr(err, "message", err.args[0])
+            # pylint: disable=raise-missing-from
             raise MissingValueForSerializationException(
                 f"Did not find key {repr(missing_key)} in {repr(version)} when serializing version number"
             )
 
         keys_needing_representation = set()
 
-        for k in self.order():
-            v = values[k]
+        for key in self.order():
+            value = values[key]
 
-            if not isinstance(v, VersionPart):
+            if not isinstance(value, VersionPart):
                 # values coming from environment variables don't need representation
                 continue
 
-            keys_needing_representation.add(k)
+            keys_needing_representation.add(key)
 
         required_by_format = set(labels_for_format(serialize_format))
 

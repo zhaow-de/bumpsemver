@@ -14,26 +14,26 @@ class Git:
     @classmethod
     def commit(cls, message, context, extra_args=None):
         extra_args = extra_args or []
-        with NamedTemporaryFile("wb", delete=False) as f:
-            f.write(message.encode("utf-8"))
+        with NamedTemporaryFile("wb", delete=False) as temp_fp:
+            temp_fp.write(message.encode("utf-8"))
         env = os.environ.copy()
         for key in ("current_version", "new_version"):
             env[str("BUMPSEMVER_" + key.upper())] = str(context[key])
         try:
-            subprocess.check_output(["git", "commit", "-F", f.name] + extra_args, env=env)
+            subprocess.check_output(["git", "commit", "-F", temp_fp.name] + extra_args, env=env)
         except subprocess.CalledProcessError as exc:
             err_msg = f"Failed to run {exc.cmd}: return code {exc.returncode}, output: {exc.output}"
             logger.exception(err_msg)
             raise exc
         finally:
-            os.unlink(f.name)
+            os.unlink(temp_fp.name)
 
     @classmethod
     def is_usable(cls):
         try:
             return subprocess.call(["git", "rev-parse", "--git-dir"], stderr=subprocess.PIPE, stdout=subprocess.PIPE) == 0
-        except OSError as e:
-            if e.errno in (errno.ENOENT, errno.EACCES):
+        except OSError as err:
+            if err.errno in (errno.ENOENT, errno.EACCES):
                 return False
             raise
 

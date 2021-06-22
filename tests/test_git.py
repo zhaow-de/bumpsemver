@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import os
 import subprocess
 from functools import partial
@@ -228,7 +230,7 @@ def test_current_version_from_tag(tmpdir):
     # don't give current-version, that should come from tag
     main(["patch", "update_from_tag"])
 
-    assert "26.6.1" == tmpdir.join("update_from_tag").read()
+    assert tmpdir.join("update_from_tag").read() == "26.6.1"
 
 
 def test_current_version_from_tag_written_to_config_file(tmpdir):

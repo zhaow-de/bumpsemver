@@ -47,7 +47,7 @@ RE_DETECT_SECTION_TYPE = re.compile(
 )
 
 logger = logging.getLogger(__name__)
-time_context = {'now': datetime.now(), 'utcnow': datetime.utcnow()}
+time_context = {"now": datetime.now(), "utcnow": datetime.utcnow()}
 
 OPTIONAL_ARGUMENTS_THAT_TAKE_VALUES = [
     "--config-file",
@@ -159,7 +159,7 @@ def _setup_logging(verbose):
         log_level = logging.DEBUG
     root_logger = logging.getLogger("")
     root_logger.setLevel(log_level)
-    logger.debug(f"Starting {DESCRIPTION}")
+    logger.debug("Starting {}‚", DESCRIPTION)
 
 
 def _determine_vcs_usability():
@@ -246,10 +246,10 @@ def _load_configuration(config_file, explicit_config, defaults):
                 section_config["replace"] = defaults.get("replace", "{new_version}")
             files.append(ConfiguredGenericFile(filename, VersionConfig(**section_config)))
         elif section_type.get("json"):
-            jsonpath = section_config.pop('jsonpath', defaults.get('jsonpath', 'version'))
+            jsonpath = section_config.pop("jsonpath", defaults.get("jsonpath", "version"))
             files.append(ConfiguredJSONFile(filename, jsonpath, VersionConfig(**section_config)))
         elif section_type.get("yaml"):
-            yamlpath = section_config.pop('yamlpath', defaults.get('yamlpath', 'version'))
+            yamlpath = section_config.pop("yamlpath", defaults.get("yamlpath", "version"))
             files.append(ConfiguredYAMLFile(filename, yamlpath, VersionConfig(**section_config)))
         else:
             # the other cases must not be possible, because the regex matching at the beginning of this function should filter them out
@@ -303,10 +303,10 @@ def _assemble_new_version(context, current_version, defaults, arg_current_versio
                 new_version = current_version.bump(positionals[0], version_config.order())
                 logger.info(f"Values are now: {key_value_string(new_version.values)}")
                 defaults["new_version"] = version_config.serialize(new_version, context)
-        except MissingValueForSerializationException as e:
-            logger.info(f"Opportunistic finding of new_version failed: {e.message}")
-        except IncompleteVersionRepresentationException as e:
-            logger.info(f"Opportunistic finding of new_version failed: {e.message}")
+        except MissingValueForSerializationException as err:
+            logger.info(f"Opportunistic finding of new_version failed: {err.message}")
+        except IncompleteVersionRepresentationException as err:
+            logger.info(f"Opportunistic finding of new_version failed: {err.message}")
         except KeyError:
             logger.info("Opportunistic finding of new_version failed")
     return new_version
@@ -425,9 +425,9 @@ def _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2):
     return args, file_names
 
 
-def _parse_new_version(args, new_version, vc):
+def _parse_new_version(args, new_version, version_config):
     if args.new_version:
-        new_version = vc.parse(args.new_version)
+        new_version = version_config.parse(args.new_version)
     logger.info(f"New version will be '{args.new_version}'")
     return new_version
 
@@ -438,12 +438,11 @@ def _determine_vcs_dirty(defaults):
 
     try:
         Git.assert_non_dirty()
-    except WorkingDirectoryIsDirtyException as e:
+    except WorkingDirectoryIsDirtyException as err:
         if defaults["allow_dirty"]:
             return None
-        else:
-            logger.warning(f"{e.message}\n\nUse --allow-dirty to override this if you know what you're doing.")
-            raise
+        logger.warning(f"{err.message}\n\nUse --allow-dirty to override this if you know what you're doing.")
+        raise
 
     return Git
 
@@ -451,14 +450,14 @@ def _determine_vcs_dirty(defaults):
 def _check_files_contain_version(files, current_version, context):
     # make sure files exist and contain version string
     logger.info(f"Asserting files {', '.join([str(f) for f in files])} contain the version string...")
-    for f in files:
-        f.should_contain_version(current_version, context)
+    for file_item in files:
+        file_item.should_contain_version(current_version, context)
 
 
 def _replace_version_in_files(files, current_version, new_version, dry_run, context):
     # change version string in files
-    for f in files:
-        f.replace(current_version, new_version, context, dry_run)
+    for file_item in files:
+        file_item.replace(current_version, new_version, context, dry_run)
 
 
 def _update_config_file(config, config_file, config_newlines, config_file_exists, new_version, dry_run):
@@ -473,8 +472,8 @@ def _update_config_file(config, config_file, config_newlines, config_file_exists
         logger.info(new_config.getvalue())
 
         if write_to_config_file:
-            with open(config_file, "wt", encoding="utf-8", newline=config_newlines) as f:
-                f.write(new_config.getvalue().strip() + "\n")
+            with open(config_file, "wt", encoding="utf-8", newline=config_newlines) as config_fp:
+                config_fp.write(new_config.getvalue().strip() + "\n")
 
     except UnicodeEncodeError:
         warnings.warn(

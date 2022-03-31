@@ -86,7 +86,7 @@ def test_commit_and_tag(tmpdir):
 
     assert "-47.1.1" in log
     assert "+47.1.2" in log
-    assert "[OPS] bumped version: 47.1.1 → 47.1.2" in log
+    assert "build(repo): bumped version 47.1.1 → 47.1.2" in log
 
     tag_out = check_output(["git", "tag"])
 
@@ -124,7 +124,7 @@ def test_commit_and_tag_with_configfile(tmpdir):
 
     assert "-48.1.1" in log
     assert "+48.1.2" in log
-    assert "[OPS] bumped version: 48.1.1 → 48.1.2" in log
+    assert "build(repo): bumped version 48.1.1 → 48.1.2" in log
 
     tag_out = check_output(["git", "tag"])
 
@@ -160,7 +160,7 @@ def test_commit_and_not_tag_with_configfile(tmpdir, config):
 
     assert "-48.10.1" in log
     assert "+48.10.2" in log
-    assert "[OPS] bumped version: 48.10.1 → 48.10.2" in log
+    assert "build(repo): bumped version 48.10.1 → 48.10.2" in log
 
     tag_out = check_output(["git", "tag"])
 
@@ -480,8 +480,8 @@ def test_subjunctive_dry_run_logging(tmpdir):
         ("bumpsemver.cli", "INFO", "Would prepare Git commit"),
         ("bumpsemver.cli", "INFO", "Would add changes in file 'dont_touch_me.txt' to Git"),
         ("bumpsemver.cli", "INFO", "Would add changes in file '.bumpsemver.cfg' to Git"),
-        ("bumpsemver.cli", "INFO", "Would commit to Git with message '[OPS] bumped version: 0.8.0 \u2192 0.8.1'"),
-        ("bumpsemver.cli", "INFO", "Would tag `r0.8.1` with message `[OPS] bumped version: 0.8.0 \u2192 0.8.1` in Git and not signing")
+        ("bumpsemver.cli", "INFO", "Would commit to Git with message 'build(repo): bumped version 0.8.0 \u2192 0.8.1'"),
+        ("bumpsemver.cli", "INFO", "Would tag `r0.8.1` with message `build(repo): bumped version 0.8.0 \u2192 0.8.1` in Git and not signing")
     )
 
 
@@ -525,8 +525,8 @@ def test_log_commit_message_if_no_commit_tag_but_usable_vcs(tmpdir):
         ("bumpsemver.cli", "INFO", "Would prepare Git commit"),
         ("bumpsemver.cli", "INFO", "Would add changes in file 'please_touch_me.txt' to Git"),
         ("bumpsemver.cli", "INFO", "Would add changes in file '.bumpsemver.cfg' to Git"),
-        ("bumpsemver.cli", "INFO", "Would commit to Git with message '[OPS] bumped version: 0.3.3 \u2192 0.3.4'"),
-        ("bumpsemver.cli", "INFO", "Would tag `r0.3.4` with message `[OPS] bumped version: 0.3.3 \u2192 0.3.4` in Git and not signing"),
+        ("bumpsemver.cli", "INFO", "Would commit to Git with message 'build(repo): bumped version 0.3.3 \u2192 0.3.4'"),
+        ("bumpsemver.cli", "INFO", "Would tag `r0.3.4` with message `build(repo): bumped version 0.3.3 \u2192 0.3.4` in Git and not signing"),
     )
 
 

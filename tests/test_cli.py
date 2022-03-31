@@ -108,9 +108,9 @@ optional arguments:
   --tag-name TAG_NAME   Tag name (only works with --tag) (default:
                         r{new_version})
   --tag-message TAG_MESSAGE
-                        Tag message (default: [OPS] bumped version:
+                        Tag message (default: build(repo): bumped version
                         {current_version} → {new_version})
-  --message COMMIT_MSG  Commit message (default: [OPS] bumped version:
+  --message COMMIT_MSG  Commit message (default: build(repo): bumped version
                         {current_version} → {new_version})
 """ % DESCRIPTION).lstrip()
 

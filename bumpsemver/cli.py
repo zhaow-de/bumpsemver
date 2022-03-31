@@ -397,7 +397,7 @@ def _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2):
         help="Tag message",
         default=defaults.get(
             "tag_message",
-            "[OPS] bumped version: {current_version} → {new_version}"
+            "build(repo): bumped version {current_version} → {new_version}"
         ),
     )
     parser3.add_argument(
@@ -405,7 +405,7 @@ def _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2):
         metavar="COMMIT_MSG",
         help="Commit message",
         default=defaults.get(
-            "message", "[OPS] bumped version: {current_version} → {new_version}"
+            "message", "build(repo): bumped version {current_version} → {new_version}"
         ),
     )
     file_names = []

@@ -1,15 +1,15 @@
-import collections
 import io
 import json
 import logging
-from json import JSONDecodeError
+from datetime import datetime
+from typing import Dict, Union
 
 from jsonpath_ng import parse
 
-from bumpsemver.version_part import Version
-from bumpsemver.exceptions import VersionNotFoundException
+from bumpsemver.exceptions import VersionNotFoundError
 from bumpsemver.files import FileTypes
 from bumpsemver.files.base import FileTypeBase
+from bumpsemver.version_part import Version
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +32,16 @@ class ConfiguredJSONFile(FileTypeBase):
         self.json_path = jsonpath
 
     def should_contain_version(self, version: Version, context: dict) -> None:
-        current_version = self._version_config.serialize(version, context)
+        current_version = self._version_config.serialize(version)
         context["current_version"] = current_version
 
         if self.contains(current_version):
             return
 
         # version not found
-        raise VersionNotFoundException(f"Did not find '{current_version}' at jsonpath '{self.json_path}' in file: '{self.path}'")
+        raise VersionNotFoundError(
+            f"Did not find '{current_version}' at jsonpath '{self.json_path}' in file: '{self.path}'"
+        )
 
     def contains(self, search: str) -> bool:
         try:
@@ -47,33 +49,34 @@ class ConfiguredJSONFile(FileTypeBase):
                 data = json.load(orig_fp)
             return _get_json_value(data, self.json_path) == search
         except LookupError as err:
-            logger.error(f"invalid path expression: {str(err)}", exc_info=err)
+            logger.error(f"invalid path expression: {err!s}", exc_info=err)
             return False
-        except JSONDecodeError as err:
-            raise err
 
-    def replace(self, current_version: Version, new_version: Version, context: dict, dry_run: bool) -> None:
+    def replace(
+        self, current_version: Version, new_version: Version, context: Dict[str, Union[str, datetime]], dry_run: bool
+    ) -> None:
         with io.open(self.path, "rt", encoding="utf-8") as orig_fp:
             file_content_before = orig_fp.read()
-            # the object_pairs_hook allows us to load the json in a way that key order is preserved and will keep the file diff
-            # to a minimum
+            # the object_pairs_hook allows us to load the json in a way that key order
+            # is preserved and will keep the file diff to a minimum
             #
-            # noinspection PyTypeChecker
-            data = json.loads(file_content_before, object_pairs_hook=collections.OrderedDict)
+            data = json.loads(file_content_before)
 
-        current_version = self._version_config.serialize(current_version, context)
-        context["current_version"] = current_version
-        new_version = self._version_config.serialize(new_version, context)
-        context["new_version"] = new_version
+        current_version_str = self._version_config.serialize(current_version)
+        context["current_version"] = current_version_str
+        new_version_str = self._version_config.serialize(new_version)
+        context["new_version"] = new_version_str
 
-        if _get_json_value(data, self.json_path) == current_version:
-            _set_json_value(data, self.json_path, new_version)
+        if _get_json_value(data, self.json_path) == current_version_str:
+            _set_json_value(data, self.json_path, new_version_str)
         # ensure_ascii: we're writing utf-8 files, so we don't need ascii support
-        # allow_nan: JSON does not have an understanding of infinity or nan, so it’s forbidden
+        # allow_nan: JSON does not have an understanding of infinity or nan, so it is forbidden
         # indent: indent of 2 spaces is common practise
-        # separators: the default separators leave a trailing space after every comma. when using indentation, this results in awkward
-        #             line-endings with a leading space
-        file_content_after = json.dumps(data, ensure_ascii=False, allow_nan=False, indent=2, separators=(",", ": ")) + "\n"
+        # separators: the default separators leave a trailing space after every comma. when using indentation,
+        #             this results in awkward line-endings with a leading space
+        file_content_after = (
+            json.dumps(data, ensure_ascii=False, allow_nan=False, indent=2, separators=(",", ": ")) + "\n"
+        )
 
         self.update_file(file_content_before, file_content_after, dry_run)
 

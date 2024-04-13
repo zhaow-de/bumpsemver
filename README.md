@@ -1,6 +1,13 @@
 # bumpsemver
 
-**Current version: 1.0.6**
+[![image](https://img.shields.io/pypi/v/bumpsemver.svg)](https://pypi.org/project/bumpsemver/)
+[![image](https://img.shields.io/pypi/l/bumpsemver.svg)](https://pypi.org/project/bumpsemver/)
+[![image](https://img.shields.io/pypi/pyversions/bumpsemver.svg)](https://pypi.org/project/bumpsemver/)
+[![codecov](https://codecov.io/gh/zhaow-de/bumpsemver/graph/badge.svg?token=WP4O30YLO3)](https://codecov.io/gh/zhaow-de/bumpsemver)
+[![GitHub Actions](https://github.com/zhaow-de/bumpsemver/workflows/CI/badge.svg)](https://github.com/zhaow-de/bumpsemver/actions)
+
+
+Current version: **1.0.6**
 
 A utility to simplify the version bumping for git repos.
 
@@ -10,13 +17,15 @@ introduced, which make the fork-and-extend approach infeasible:
 1. dropped Python 2 support
 2. boosted the test coverage to 95%+
 3. dropped many irrelevant features to reduce complexity. (e.g. customized version component support)
-4. introduced JSON support to make it work for package-lock.json, YAML support to make it work for Ansible plays
-5. narrowed the versioning scheme to semver-only
+4. introduced JSON support to make it work for package-lock.json
+5. introduced YAML support to make it work for Ansible playbooks
+6. introduced TOML support to make it work for pyproject.toml 
+7. narrowed the versioning scheme to semver-only
 
 ## Installation
 
 ```bash
-pip3 install bumpsemver
+pip install --upgrade bumpsemver
 ```
 
 ## Usage
@@ -29,8 +38,7 @@ This application supports both the CLI mode and config file mode.
 bumpsemver [options] part [file]
 ```
     
-#### `options`
-_**(optional)**_<br />
+#### `options` _**(optional)**_
   
 Most of the configuration values described below can also be given as an option on the command-line.
 Additionally, the following options are available:
@@ -40,7 +48,7 @@ Additionally, the following options are available:
 
 `--allow-dirty`
   Normally, bumpsemver will abort if the working directory is dirty to protect
-  yourself from releasing unversioned files and/or overwriting unsaved changes.
+  yourself from releasing not versioned files and/or overwriting unsaved changes.
   Use this option to override this check.
 
 `--verbose`
@@ -49,8 +57,7 @@ Additionally, the following options are available:
 `-h, --help`
   Print help and exit
 
-#### `part`
-_**required**_<br />
+#### `part` _**required**_
 
 The part of the version to increase. As we support semver only, the valid values include: `major`, `minor`, and `patch`.
 
@@ -60,8 +67,8 @@ For example, bumping file `src/VERSION` from 0.5.1 to 0.6.0:
 bumpsemver --current-version 0.5.1 minor src/VERSION
 ```
 
-#### `file`
-_**(optional)**_<br />
+#### `file` _**(optional)**_
+
 **default**: none
 
 The file that will be modified.
@@ -135,7 +142,7 @@ Also available as CLI argument `--tag-name`, for example: `bumpsemver --tag-name
 In addition, it is also possible to provide a tag message by using CLI `--tag-message TAG_MESSAGE`. Example usage:
 `bumpsemver --tag-name 'release-{new_version}' --tag-message "Release {new_version}" patch`
 
-If neither tag message or sign tag is provided, we use a `lightweight` tag in git. Otherwise, we utilize an `annotated`
+If neither tag message nor sign tag is provided, we use a `lightweight` tag in git. Otherwise, we utilize an `annotated`
 git tag. Read more about Git tagging [here](https://git-scm.com/book/en/v2/Git-Basics-Tagging).
 
 ##### `commit = (True | False)`
@@ -185,7 +192,7 @@ replace = current version: {new_version}
 **default:** `{current_version}`
 
 Template string how to search for the string to be replaced in the file. Useful if the remotest possibility exists that
-the current version number might be present multiple times in the file and you mean to only bump one of the occurrences.
+the current version number might be present multiple times in the file, and you mean to only bump one of the occurrences.
 
 #### `replace =`
 **default:** `{new_version}`
@@ -208,7 +215,7 @@ replace = MyProject=={new_version}
 ```
 
 With `[bumpsemver:file:…]`, the specified file is processed as plain text file, which in fact makes this application
-programming language neutral. However, it will be very error prone for complex file for example `package-lock.json`.
+programming language neutral. However, it will be very error-prone for complex file for example `package-lock.json`.
 
 For randomly sampled 30 projects written in node.js/TypeScript, the classical `bumpversion` or the renovated `bump2version` both made
 100% mistakes which changed something shouldn't be changed. A typical and relatively complex React projects contains 1000+ npm packages  
@@ -256,21 +263,3 @@ yamlpath = *.vars.app_version
 Please note that we use [yamlpath](https://github.com/wwkimball/yamlpath/wiki/Segments-of-a-YAML-Path#yaml-path-standard) instead of
 `jsonpath` here. `yamlpath` is not a popular "standard" widely adopted. For complex scenarios, it makes sense to test the expression with
 [yamlpath cli](https://pypi.org/project/yamlpath/) before putting anything in the config file.
-
-## Test
-
-Test in Docker container (recommended):
-```bash
-make test
-```
-
-Local test in the working environment (not recommended):
-```bash
-tox
-```
-
-To test the compatibility with a specific version of Python, put the version(s) into `./python-versions.txt` one version
-per line. Then run:
-```bash
-make test
-```

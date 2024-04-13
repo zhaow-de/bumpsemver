@@ -1,5 +1,7 @@
 import logging
+from datetime import datetime
 from types import SimpleNamespace
+from typing import Dict, Union
 
 from ruamel.yaml.compat import StringIO
 from yamlpath import Processor, YAMLPath
@@ -7,7 +9,7 @@ from yamlpath.common import Parsers
 from yamlpath.exceptions import YAMLPathException
 from yamlpath.wrappers import ConsolePrinter
 
-from bumpsemver.exceptions import BumpVersionException, VersionNotFoundException
+from bumpsemver.exceptions import BumpVersionError, VersionNotFoundError
 from bumpsemver.files import FileTypes
 from bumpsemver.files.base import FileTypeBase
 from bumpsemver.version_part import Version
@@ -15,7 +17,7 @@ from bumpsemver.version_part import Version
 logger = logging.getLogger(__name__)
 
 
-class InvalidYAMLException(BumpVersionException):
+class InvalidYAMLError(BumpVersionError):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
@@ -30,14 +32,16 @@ class ConfiguredYAMLFile(FileTypeBase):
         self.yaml_log = ConsolePrinter(self.yaml_logging_args)
 
     def should_contain_version(self, version: Version, context: dict) -> None:
-        current_version = self._version_config.serialize(version, context)
+        current_version = self._version_config.serialize(version)
         context["current_version"] = current_version
 
         if self.contains(current_version):
             return
 
         # version not found
-        raise VersionNotFoundException(f"Did not find '{current_version}' at yamlpath '{self.yaml_path}' in file: '{self.path}'")
+        raise VersionNotFoundError(
+            f"Did not find '{current_version}' at yamlpath '{self.yaml_path}' in file: '{self.path}'"
+        )
 
     def contains(self, search: str) -> bool:
         try:
@@ -50,7 +54,7 @@ class ConfiguredYAMLFile(FileTypeBase):
                     matched = False
             return matched
         except YAMLPathException as ex:
-            logger.error(f"invalid path expression: {str(ex)}", exc_info=ex)
+            logger.error(f"invalid path expression: {ex!s}", exc_info=ex)
             return False
 
     def __dump(self, data) -> str:
@@ -61,27 +65,29 @@ class ConfiguredYAMLFile(FileTypeBase):
     def __get_processor(self):
         (yaml_data, doc_loaded) = Parsers.get_yaml_data(self.yaml, self.yaml_log, self.path)
         if not doc_loaded:
-            raise InvalidYAMLException(f"Failed in reading YAML file '{self.path}'")
+            raise InvalidYAMLError(f"Failed in reading YAML file '{self.path}'")
         processor = Processor(self.yaml_log, yaml_data)
         return processor
 
-    def replace(self, current_version: Version, new_version: Version, context: dict, dry_run: bool) -> None:
+    def replace(
+        self, current_version: Version, new_version: Version, context: Dict[str, Union[str, datetime]], dry_run: bool
+    ) -> None:
         processor = self.__get_processor()
         file_content_before = self.__dump(processor.data)
 
-        current_version = self._version_config.serialize(current_version, context)
-        context["current_version"] = current_version
-        new_version = self._version_config.serialize(new_version, context)
-        context["new_version"] = new_version
+        current_version_str = self._version_config.serialize(current_version)
+        context["current_version"] = current_version_str
+        new_version_str = self._version_config.serialize(new_version)
+        context["new_version"] = new_version_str
 
         yaml_path = YAMLPath(self.yaml_path)
         for node in processor.get_nodes(yaml_path, mustexist=True):
-            if node.node == current_version:
-                processor.set_value(node.path, new_version)
+            if node.node == current_version_str:
+                processor.set_value(node.path, new_version_str)
 
         file_content_after = self.__dump(processor.data)
 
         self.update_file(file_content_before, file_content_after, dry_run)
 
     def __repr__(self):
-        return f"<bumpsemver.ConfiguredYAMLFile:{self.path}>"
+        return f"<bumpsemver.files.ConfiguredYAMLFile:{self.path}>"

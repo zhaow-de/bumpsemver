@@ -2,9 +2,11 @@ import errno
 import logging
 import os
 import subprocess
+from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import Optional, Union
 
-from bumpsemver.exceptions import (WorkingDirectoryIsDirtyException)
+from bumpsemver.exceptions import WorkingDirectoryIsDirtyError
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +14,7 @@ logger = logging.getLogger(__name__)
 class Git:
 
     @classmethod
-    def commit(cls, message, context, extra_args=None):
+    def commit(cls, message: str, context, extra_args=None):
         extra_args = extra_args or []
         with NamedTemporaryFile("wb", delete=False) as temp_fp:
             temp_fp.write(message.encode("utf-8"))
@@ -20,7 +22,7 @@ class Git:
         for key in ("current_version", "new_version"):
             env[str("BUMPSEMVER_" + key.upper())] = str(context[key])
         try:
-            subprocess.check_output(["git", "commit", "-F", temp_fp.name] + extra_args, env=env)
+            subprocess.check_output(["git", "commit", "-F", temp_fp.name, *extra_args], env=env)
         except subprocess.CalledProcessError as exc:
             err_msg = f"Failed to run {exc.cmd}: return code {exc.returncode}, output: {exc.output}"
             logger.exception(err_msg)
@@ -31,11 +33,12 @@ class Git:
     @classmethod
     def is_usable(cls):
         try:
-            return subprocess.call(["git", "rev-parse", "--git-dir"], stderr=subprocess.PIPE, stdout=subprocess.PIPE) == 0
+            return (
+                subprocess.call(["git", "rev-parse", "--git-dir"], stderr=subprocess.PIPE, stdout=subprocess.PIPE) == 0
+            )
         except OSError as err:
             if err.errno in (errno.ENOENT, errno.EACCES):
                 return False
-            raise
 
     @classmethod
     def assert_non_dirty(cls):
@@ -46,7 +49,9 @@ class Git:
         ]
 
         if lines:
-            raise WorkingDirectoryIsDirtyException("Git working directory is not clean:\n{}".format(b"\n".join(lines).decode()))
+            raise WorkingDirectoryIsDirtyError(
+                "Git working directory is not clean:\n{}".format(b"\n".join(lines).decode())
+            )
 
     @classmethod
     def latest_tag_info(cls):
@@ -88,11 +93,11 @@ class Git:
         return info
 
     @classmethod
-    def add_path(cls, path):
-        subprocess.check_output(["git", "add", "--update", path])
+    def add_path(cls, path: Union[str, Path]):
+        subprocess.check_output(["git", "add", "--update", str(path)])
 
     @classmethod
-    def tag(cls, sign, name, message):
+    def tag(cls, name: str, sign: bool = False, message: Optional[str] = None) -> None:
         """
         Create a tag of the new_version in Git.
 

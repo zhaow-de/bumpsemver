@@ -1,26 +1,30 @@
-
-
-class BumpVersionException(Exception):
+class BumpVersionError(Exception):
     """Custom base class for all BumpVersion exception types."""
 
 
-class IncompleteVersionRepresentationException(BumpVersionException):
+class IncompleteVersionRepresentationError(BumpVersionError):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
 
 
-class MissingValueForSerializationException(BumpVersionException):
+class MissingValueForSerializationError(BumpVersionError):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
 
 
-class WorkingDirectoryIsDirtyException(BumpVersionException):
+class WorkingDirectoryIsDirtyError(BumpVersionError):
     def __init__(self, message):
         super().__init__(message)
         self.message = message
 
 
-class VersionNotFoundException(BumpVersionException):
+class VersionNotFoundError(BumpVersionError):
     """A version number was not found in a source file."""
+
+
+class MixedNewLineError(BumpVersionError):
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message

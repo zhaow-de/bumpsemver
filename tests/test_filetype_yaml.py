@@ -1,10 +1,6 @@
-# pylint: skip-file
-
-# noinspection PyPackageRequirements
 import pytest
-
-# noinspection PyPackageRequirements
 from testfixtures import LogCapture
+import os
 
 from bumpsemver.files.yaml import ConfiguredYAMLFile
 
@@ -352,3 +348,32 @@ def test_yaml_file_info_logging(tmpdir):
 def test_repr():
     file = ConfiguredYAMLFile("fileL", None, None)
     assert repr(file) == "<bumpsemver.files.ConfiguredYAMLFile:fileL>"
+
+
+def test_yaml_file_multiple_values_one_pattern(tmpdir):
+    data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures")
+
+    tmpdir.chdir()
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+        [bumpsemver]
+        current_version = 2.0.2
+        commit = True
+        tag = False
+        tag_name = v{new_version}
+
+        [bumpsemver:yaml:attribute_sources.yml]
+        yamlpath = sources.tables.meta.version
+        """
+        ).strip()
+    )
+    with open(data_path + "/attribute_sources_before.yml", "rt") as fin:
+        tmpdir.join("attribute_sources.yml").write(fin.read())
+
+    main(["minor"])
+
+    actual = tmpdir.join("attribute_sources.yml").read()
+
+    with open(data_path + "/attribute_sources_after.yml", "rt") as fin:
+        assert actual == fin.read()

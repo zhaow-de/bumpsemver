@@ -73,7 +73,7 @@ bumpsemver --current-version 0.5.1 minor src/VERSION
 
 The file that will be modified.
 
-If not given, the list of `[bumpsemver:file:…]` sections from the configuration file will be used. If no files are
+If not given, the list of `[bumpsemver:plaintext:…]` sections from the configuration file will be used. If no files are
 mentioned on the configuration file either, then no files will be modified.
 
 For example, bumping file `setup.py` from 1.1.9 to 2.0.0:
@@ -94,7 +94,7 @@ current_version = 0.2.9
 commit = True
 tag = True
 
-[bumpsemver:file:README]
+[bumpsemver:plaintext:README]
 ```
 
 #### `.bumpsemver.cfg` -- Global configuration
@@ -171,7 +171,7 @@ In addition, it is also possible to provide a tag message by using CLI `--tag-me
 
 #### `.bumpsemver.cfg` -- File specific configuration
 
-This configuration is in the section: `[bumpsemver:file:…]` or `[bumpsemver:json:…]`
+This configuration is in the section: `[bumpsemver:plaintext:…]` or `[bumpsemver:json:…]`
 
 Note: The configuration file format requires each section header to be unique. If you want to process a certain file
 multiple times (e.g. multiple location to be replaced separately), you may append a description between parens to the
@@ -209,12 +209,12 @@ using the following `.bumpsemver.cfg` will ensure only the line containing `MyPr
 [bumpsemver]
 current_version = 1.5.6
 
-[bumpsemver:file:requirements.txt]
+[bumpsemver:plaintext:requirements.txt]
 search = MyProject=={current_version}
 replace = MyProject=={new_version}
 ```
 
-With `[bumpsemver:file:…]`, the specified file is processed as plain text file, which in fact makes this application
+With `[bumpsemver:plaintext:…]`, the specified file is processed as plain text file, which in fact makes this application
 programming language neutral. However, it will be very error-prone for complex file for example `package-lock.json`.
 
 For randomly sampled 30 projects written in node.js/TypeScript, the classical `bumpversion` or the renovated `bump2version` both made

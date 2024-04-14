@@ -36,8 +36,13 @@ DESCRIPTION = f"{__title__}: v{__version__} (using Python v{python_version})"
 # bumpsemver:file:value
 # bumpsemver:file(suffix):value
 # bumpsemver:file ( suffix with spaces):value
+# bumpsemver:plaintext:value
+# bumpsemver:plaintext(suffix):value
+# bumpsemver:plaintext ( suffix with spaces):value
 RE_DETECT_SECTION_TYPE = re.compile(
     r"^bumpsemver:("
+    r"(?P<text>plaintext)(\s*\(\s*(?P<text_suffix>[^):]+)\)?)?"
+    r"|"
     r"(?P<file>file)(\s*\(\s*(?P<file_suffix>[^):]+)\)?)?"
     r"|"
     r"(?P<json>json)(\s*\(\s*(?P<json_suffix>[^):]+)\)?)?"
@@ -126,7 +131,7 @@ def _parse_arguments_phase_1(original_args):
     if len(positionals[1:]) > 2:
         logger.warning(
             "Giving multiple files on the command line will be deprecated, "
-            "please use [bumpsemver:file:...] in a config file."
+            "please use [bumpsemver:plaintext:...] in a config file."
         )
     root_parser = argparse.ArgumentParser(add_help=False)
     root_parser.add_argument(
@@ -209,7 +214,9 @@ def _parse_sections(config: RawConfigParser, defaults, sections):
 
         filename = section_value
 
-        if section_type.get("file"):
+        if section_type.get("file") or section_type.get("text"):
+            if section_type.get("file"):
+                logger.warning("Using 'file' section type is deprecated, please use 'plaintext' instead.")
             if "search" not in section_config:
                 section_config["search"] = defaults.get("search", "{current_version}")
             if "replace" not in section_config:

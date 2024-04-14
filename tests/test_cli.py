@@ -251,7 +251,7 @@ def test_log_no_config_file_info_message(tmpdir):
         ("bumpsemver.cli", "INFO", "New version will be '1.0.1'"),
         ("bumpsemver.cli", "INFO", "Asserting files a_file.txt contain the version string..."),
         ("bumpsemver.files.text", "INFO", "Found '1.0.0' in a_file.txt at line 0: 1.0.0"),
-        ("bumpsemver.files.text", "INFO", "Changing generic file a_file.txt:"),
+        ("bumpsemver.files.text", "INFO", "Changing plaintext file a_file.txt:"),
         ("bumpsemver.files.text", "INFO", "--- a/a_file.txt\n+++ b/a_file.txt\n@@ -1 +1 @@\n-1.0.0\n+1.0.1"),
         ("bumpsemver.cli", "INFO", "Would write to config file .bumpsemver.cfg:"),
         ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 1.0.1\n\n"),
@@ -321,6 +321,7 @@ def test_complex_info_logging(tmpdir):
     log_capture.check(
         ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
         ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.0\n\n[bumpsemver:file:fileE]"),
+        ("bumpsemver.cli", "WARNING", "Using 'file' section type is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -338,10 +339,54 @@ def test_complex_info_logging(tmpdir):
         ("bumpsemver.cli", "INFO", "New version will be '0.4.1'"),
         ("bumpsemver.cli", "INFO", "Asserting files fileE contain the version string..."),
         ("bumpsemver.files.text", "INFO", "Found '0.4.0' in fileE at line 0: 0.4.0"),
-        ("bumpsemver.files.text", "INFO", "Changing generic file fileE:"),
+        ("bumpsemver.files.text", "INFO", "Changing plaintext file fileE:"),
         ("bumpsemver.files.text", "INFO", "--- a/fileE\n+++ b/fileE\n@@ -1 +1 @@\n-0.4.0\n+0.4.1"),
         ("bumpsemver.cli", "INFO", "Writing to config file .bumpsemver.cfg:"),
         ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.1\n\n[bumpsemver:file:fileE]\n\n"),
+    )
+
+
+def test_complex_info_logging_plaintext(tmpdir):
+    tmpdir.join("fileM").write("0.4.0")
+    tmpdir.chdir()
+
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            r"""
+            [bumpsemver]
+            current_version = 0.4.0
+            [bumpsemver:plaintext:fileM]
+        """
+        ).strip()
+    )
+
+    with LogCapture() as log_capture:
+        main(["patch", "--verbose"])
+
+    log_capture.check(
+        ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
+        ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.0\n[bumpsemver:plaintext:fileM]"),
+        (
+            "bumpsemver.version_part",
+            "INFO",
+            "Parsing version '0.4.0' using regexp '(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)'",
+        ),
+        ("bumpsemver.version_part", "INFO", "Parsed the following values: major=0, minor=4, patch=0"),
+        ("bumpsemver.cli", "INFO", "Attempting to increment part 'patch'"),
+        ("bumpsemver.cli", "INFO", "Values are now: major=0, minor=4, patch=1"),
+        (
+            "bumpsemver.version_part",
+            "INFO",
+            "Parsing version '0.4.1' using regexp '(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)'",
+        ),
+        ("bumpsemver.version_part", "INFO", "Parsed the following values: major=0, minor=4, patch=1"),
+        ("bumpsemver.cli", "INFO", "New version will be '0.4.1'"),
+        ("bumpsemver.cli", "INFO", "Asserting files fileM contain the version string..."),
+        ("bumpsemver.files.text", "INFO", "Found '0.4.0' in fileM at line 0: 0.4.0"),
+        ("bumpsemver.files.text", "INFO", "Changing plaintext file fileM:"),
+        ("bumpsemver.files.text", "INFO", "--- a/fileM\n+++ b/fileM\n@@ -1 +1 @@\n-0.4.0\n+0.4.1"),
+        ("bumpsemver.cli", "INFO", "Writing to config file .bumpsemver.cfg:"),
+        ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.1\n\n[bumpsemver:plaintext:fileM]\n\n"),
     )
 
 
@@ -402,6 +447,7 @@ def test_search_replace_to_avoid_updating_unconcerned_lines(tmpdir):
             "[bumpsemver]\ncurrent_version = 1.5.6\n\n[bumpsemver:file:requirements.txt]\n"
             "search = MyProject=={current_version}\nreplace = MyProject=={new_version}",
         ),
+        ("bumpsemver.cli", "WARNING", "Using 'file' section type is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -423,7 +469,7 @@ def test_search_replace_to_avoid_updating_unconcerned_lines(tmpdir):
             "INFO",
             "Found 'MyProject==1.5.6' in requirements.txt at line 1: MyProject==1.5.6",
         ),
-        ("bumpsemver.files.text", "INFO", "Changing generic file requirements.txt:"),
+        ("bumpsemver.files.text", "INFO", "Changing plaintext file requirements.txt:"),
         (
             "bumpsemver.files.text",
             "INFO",
@@ -612,7 +658,7 @@ def test_deprecation_warning_multiple_files_cli(tmpdir):
             "WARNING",
             (
                 "Giving multiple files on the command line will be deprecated, please "
-                "use [bumpsemver:file:...] in a config file."
+                "use [bumpsemver:plaintext:...] in a config file."
             ),
         ),
         order_matters=False,

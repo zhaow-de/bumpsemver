@@ -2,6 +2,6 @@ from enum import Enum
 
 
 class FileTypes(str, Enum):
-    GENERIC = "generic"
+    GENERIC = "plaintext"
     JSON = "json"
     YAML = "yaml"

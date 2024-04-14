@@ -523,7 +523,7 @@ def test_subjunctive_dry_run_logging(tmpdir):
         current_version = 0.8.0
         commit = True
         tag = True
-        [bumpsemver:file:dont_touch_me.txt]
+        [bumpsemver:plaintext:dont_touch_me.txt]
     """
         ).strip()
     )
@@ -540,7 +540,7 @@ def test_subjunctive_dry_run_logging(tmpdir):
         (
             "bumpsemver.cli",
             "INFO",
-            "[bumpsemver]\ncurrent_version = 0.8.0\ncommit = True\ntag = True\n[bumpsemver:file:dont_touch_me.txt]",
+            "[bumpsemver]\ncurrent_version = 0.8.0\ncommit = True\ntag = True\n[bumpsemver:plaintext:dont_touch_me.txt]",
         ),
         (
             "bumpsemver.version_part",
@@ -560,7 +560,7 @@ def test_subjunctive_dry_run_logging(tmpdir):
         ("bumpsemver.cli", "INFO", "New version will be '0.8.1'"),
         ("bumpsemver.cli", "INFO", "Asserting files dont_touch_me.txt contain the version string..."),
         ("bumpsemver.files.text", "INFO", "Found '0.8.0' in dont_touch_me.txt at line 0: 0.8.0"),
-        ("bumpsemver.files.text", "INFO", "Would change generic file dont_touch_me.txt:"),
+        ("bumpsemver.files.text", "INFO", "Would change plaintext file dont_touch_me.txt:"),
         (
             "bumpsemver.files.text",
             "INFO",
@@ -570,7 +570,10 @@ def test_subjunctive_dry_run_logging(tmpdir):
         (
             "bumpsemver.cli",
             "INFO",
-            "[bumpsemver]\ncurrent_version = 0.8.1\ncommit = True\ntag = True\n\n[bumpsemver:file:dont_touch_me.txt]\n\n",
+            (
+                "[bumpsemver]\ncurrent_version = 0.8.1\ncommit = True\n"
+                "tag = True\n\n[bumpsemver:plaintext:dont_touch_me.txt]\n\n"
+            ),
         ),
         ("bumpsemver.cli", "INFO", "Would prepare Git commit"),
         ("bumpsemver.cli", "INFO", "Would add changes in file 'dont_touch_me.txt' to Git"),
@@ -614,6 +617,7 @@ def test_log_commit_message_if_no_commit_tag_but_usable_vcs(tmpdir):
             "INFO",
             "[bumpsemver]\ncurrent_version = 0.3.3\ncommit = False\ntag = False\n[bumpsemver:file:please_touch_me.txt]",
         ),
+        ("bumpsemver.cli", "WARNING", "Using 'file' section type is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -631,7 +635,7 @@ def test_log_commit_message_if_no_commit_tag_but_usable_vcs(tmpdir):
         ("bumpsemver.cli", "INFO", "New version will be '0.3.4'"),
         ("bumpsemver.cli", "INFO", "Asserting files please_touch_me.txt contain the version string..."),
         ("bumpsemver.files.text", "INFO", "Found '0.3.3' in please_touch_me.txt at line 0: 0.3.3"),
-        ("bumpsemver.files.text", "INFO", "Changing generic file please_touch_me.txt:"),
+        ("bumpsemver.files.text", "INFO", "Changing plaintext file please_touch_me.txt:"),
         (
             "bumpsemver.files.text",
             "INFO",
@@ -641,7 +645,10 @@ def test_log_commit_message_if_no_commit_tag_but_usable_vcs(tmpdir):
         (
             "bumpsemver.cli",
             "INFO",
-            "[bumpsemver]\ncurrent_version = 0.3.4\ncommit = False\ntag = False\n\n[bumpsemver:file:please_touch_me.txt]\n\n",
+            (
+                "[bumpsemver]\ncurrent_version = 0.3.4\ncommit = False\n"
+                "tag = False\n\n[bumpsemver:file:please_touch_me.txt]\n\n"
+            ),
         ),
         ("bumpsemver.cli", "INFO", "Would prepare Git commit"),
         ("bumpsemver.cli", "INFO", "Would add changes in file 'please_touch_me.txt' to Git"),

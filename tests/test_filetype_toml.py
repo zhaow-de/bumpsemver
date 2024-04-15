@@ -1,86 +1,12 @@
-from box import Box
-from textwrap import dedent
-from bumpsemver.files.toml import ConfiguredTOMLFile
-import pytest
-from bumpsemver.cli import main
-from bumpsemver import exceptions
-from testfixtures import LogCapture
 import os
+from textwrap import dedent
 
+import pytest
+from testfixtures import LogCapture
 
-def test_simplest_query_1():
-    obj = Box.from_toml("a = 1")
-    assert obj.a == 1
-
-
-def test_simplest_query_2():
-    obj = Box.from_toml(
-        dedent(
-            r"""
-    [a]
-    b = 2
-    """
-        )
-    )
-    assert obj.a.b == 2
-
-
-def test_simplest_query_3():
-    obj = Box.from_toml(
-        dedent(
-            r"""
-    [a.b]
-    c = 3
-    """
-        )
-    )
-    assert obj.a.b.c == 3
-
-
-def test_simplest_query_4():
-    obj = Box.from_toml(
-        dedent(
-            r"""
-    c = 4
-    [a.b]
-    c = 3
-    """
-        )
-    )
-    assert obj.a.b.c == 3
-    assert obj.c == 4
-
-
-def test_simplest_query_4_dots():
-    obj = Box.from_toml(
-        dedent(
-            r"""
-    c = 4
-    [a.b]
-    c = 3
-    """
-        ),
-        box_dots=True,
-    )
-    assert obj["a.b.c"] == 3
-    assert obj["c"] == 4
-
-
-def test_array_single_value():
-    obj = Box.from_toml(
-        dedent(
-            r"""
-    [[a]]
-    value = 1
-    [[a]]
-    value = 2
-    [[a]]
-    value = 3
-    """
-        ),
-        box_dots=True,
-    )
-    assert obj["a[1].value"] == 2
+from bumpsemver import exceptions
+from bumpsemver.cli import main
+from bumpsemver.files.toml import ConfiguredTOMLFile
 
 
 def test_repr():
@@ -152,21 +78,19 @@ def test_toml_file_simple(tmpdir):
     main(["minor"])
     assert "current_version = 85.1.0" in tmpdir.join(".bumpsemver.cfg").read()
     expected = dedent(
-        """[[dummy]]
-name = "create CodeBuild project 1"
-
-[dummy.vars]
-project_version = "85.1.0"
-software_component = "devops"
-
-[[dummy]]
-name = "create CodeBuild project 2"
-
-[dummy.vars]
-project_version = "85.0.1"
-software_component = "airflow"
-"""
-    )
+        """
+        [[dummy]]
+        name = "create CodeBuild project 1"
+        [dummy.vars]
+        project_version = "85.1.0"
+        software_component = "devops"
+        [[dummy]]
+        name = "create CodeBuild project 2"
+        [dummy.vars]
+        project_version = "85.0.1"
+        software_component = "airflow"
+        """
+    ).strip()
     assert tmpdir.join("playbook.yml").read() == expected
 
 
@@ -198,15 +122,14 @@ def test_toml_file_with_suffix_two(tmpdir):
     main(["minor"])
     assert "current_version = 85.5.0" in tmpdir.join(".bumpsemver.cfg").read()
     expected = dedent(
-        """version = "85.5.0"
-
-[pos]
-version = "85.5.0"
-
-[neg]
-version = "85.4.1"
-"""
-    )
+        """
+        version = "85.5.0"
+        [pos]
+        version = "85.5.0"
+        [neg]
+        version = "85.4.1"
+        """
+    ).strip()
     assert tmpdir.join("playbook.yml").read() == expected
 
 
@@ -333,31 +256,30 @@ def test_toml_file_info_logging(tmpdir):
     )
 
 
-#
-# def test_toml_file_real_pyproject_toml(tmpdir):
-#     data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures")
-#
-#     tmpdir.chdir()
-#     tmpdir.join(".bumpsemver.cfg").write(
-#         dedent(
-#             """
-#         [bumpsemver]
-#         current_version = 2.0.2
-#         commit = True
-#         tag = False
-#         tag_name = v{new_version}
-#
-#         [bumpsemver:toml:pyproject.toml]
-#         tomlpath = tool.poetry.version
-#         """
-#         ).strip()
-#     )
-#     with open(data_path + "/pyproject_before.toml", "rt") as fin:
-#         tmpdir.join("pyproject.toml").write(fin.read())
-#
-#     main(["minor"])
-#
-#     actual = tmpdir.join("pyproject.toml").read()
-#
-#     with open(data_path + "/pyproject_after.toml", "rt") as fin:
-#         assert actual == fin.read()
+def test_toml_file_real_pyproject_toml(tmpdir):
+    data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures")
+
+    tmpdir.chdir()
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+        [bumpsemver]
+        current_version = 2.0.2
+        commit = True
+        tag = False
+        tag_name = v{new_version}
+
+        [bumpsemver:toml:pyproject.toml]
+        tomlpath = tool.poetry.version
+        """
+        ).strip()
+    )
+    with open(data_path + "/pyproject_before.toml", "rt") as fin:
+        tmpdir.join("pyproject.toml").write(fin.read())
+
+    main(["minor"])
+
+    actual = tmpdir.join("pyproject.toml").read()
+
+    with open(data_path + "/pyproject_after.toml", "rt") as fin:
+        assert actual == fin.read()

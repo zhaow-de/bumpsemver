@@ -1,8 +1,10 @@
-from bumpsemver.files.base import FileTypeBase
-from testfixtures import LogCapture
 import logging
+
 import pytest
+from testfixtures import LogCapture
+
 from bumpsemver.exceptions import MixedNewLineError
+from bumpsemver.files.base import FileTypeBase
 
 logger = logging.getLogger(__name__)
 

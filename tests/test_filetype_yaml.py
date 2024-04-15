@@ -1,14 +1,13 @@
-import pytest
-from testfixtures import LogCapture
 import os
-
-from bumpsemver.files.yaml import ConfiguredYAMLFile
-
 from textwrap import dedent
+
+import pytest
 from ruamel.yaml import YAML
+from testfixtures import LogCapture
 
 from bumpsemver import exceptions
 from bumpsemver.cli import main
+from bumpsemver.files.yaml import ConfiguredYAMLFile
 
 
 @pytest.fixture(

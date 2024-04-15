@@ -15,7 +15,13 @@ max-args = 11
 docstring-quotes = "double"  # and here
 
 [tool.poetry]
-version = "2.1.0"
+# an empty line below, will be retainted if we use toml linting
+
+# the property below is going to be changed
+version = "2.1.0"  #   this property is going to be changed
+# an empty line below, will be removed if we use toml linting
+
+###### # # # the property above is going to be changed
 name = "attribute-predictor"
 description = "Attribute Predictor"
 authors = ["Ringier AG <info@ringier.ch>"]

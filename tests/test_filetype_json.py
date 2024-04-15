@@ -1,14 +1,13 @@
 # pylint: skip-file
 
-import pytest
-from testfixtures import LogCapture
-
 import json
 from textwrap import dedent
 
+import pytest
+from testfixtures import LogCapture
+
 from bumpsemver import exceptions
 from bumpsemver.cli import main
-
 from bumpsemver.files.json import ConfiguredJSONFile
 
 

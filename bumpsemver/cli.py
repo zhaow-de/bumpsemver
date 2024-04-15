@@ -18,6 +18,7 @@ from bumpsemver.exceptions import (
 from bumpsemver.files.base import FileTypeBase
 from bumpsemver.files.json import ConfiguredJSONFile
 from bumpsemver.files.text import ConfiguredPlainTextFile
+from bumpsemver.files.toml import ConfiguredTOMLFile
 from bumpsemver.files.yaml import ConfiguredYAMLFile
 from bumpsemver.git import Git
 from bumpsemver.utils import key_value_string
@@ -27,6 +28,9 @@ python_version = sys.version.split("\n")[0].split(" ")[0]
 DESCRIPTION = f"{__title__}: v{__version__} (using Python v{python_version})"
 
 # detect either:
+# bumpsemver:toml:value
+# bumpsemver:toml(suffix):value
+# bumpsemver:toml ( suffix with spaces):value
 # bumpsemver:yaml:value
 # bumpsemver:yaml(suffix):value
 # bumpsemver:yaml ( suffix with spaces):value
@@ -48,6 +52,8 @@ RE_DETECT_SECTION_TYPE = re.compile(
     r"(?P<json>json)(\s*\(\s*(?P<json_suffix>[^):]+)\)?)?"
     r"|"
     r"(?P<yaml>yaml)(\s*\(\s*(?P<yaml_suffix>[^):]+)\)?)?"
+    r"|"
+    r"(?P<toml>toml)(\s*\(\s*(?P<toml_suffix>[^):]+)\)?)?"
     r"):(?P<value>.+)",
 )
 
@@ -228,6 +234,9 @@ def _parse_sections(config: RawConfigParser, defaults, sections):
         elif section_type.get("yaml"):
             yamlpath = section_config.pop("yamlpath", defaults.get("yamlpath", "version"))
             files.append(ConfiguredYAMLFile(filename, yamlpath, VersionConfig(**section_config)))
+        elif section_type.get("toml"):
+            tomlpath = section_config.pop("tomlpath", defaults.get("tomlpath", "version"))
+            files.append(ConfiguredTOMLFile(filename, tomlpath, VersionConfig(**section_config)))
         #
         # the other cases must not be possible,
         # because the regex matching at the beginning of this function should filter them out

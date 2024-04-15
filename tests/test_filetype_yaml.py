@@ -54,6 +54,51 @@ def test_yaml_file_simple(tmpdir):
     assert data[0]["vars"]["project_version"] == "85.1.0"
 
 
+def test_yaml_file_simple_with_comments(tmpdir):
+    tmpdir.chdir()
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+        [bumpsemver]
+        current_version = 85.0.1
+        [bumpsemver:yaml:playbook.yml]
+        yamlpath = *.vars.project_version
+        """
+        ).strip()
+    )
+    tmpdir.join("playbook.yml").write(
+        dedent(
+            """
+        # Some comments here
+        ---
+        # Here
+        - name: 'create CodeBuild projects'
+          # Here
+          vars:
+            project_version: '85.0.1'  # and here
+            software_component: 'devops'
+    """
+        ).strip()
+    )
+    main(["minor"])
+    assert "current_version = 85.1.0" in tmpdir.join(".bumpsemver.cfg").read()
+    expected = dedent(
+        """---
+# Here
+  - name: 'create CodeBuild projects'
+  # Here
+    vars:
+      project_version: 85.1.0  # and here
+      software_component: 'devops'
+    """
+    )
+
+    yaml = YAML()
+    data = yaml.load(tmpdir.join("playbook.yml").read())
+    assert data[0]["vars"]["project_version"] == "85.1.0"
+    assert tmpdir.join("playbook.yml").read() == expected
+
+
 def test_yaml_file_exact_path(tmpdir):
     tmpdir.chdir()
     tmpdir.join(".bumpsemver.cfg").write(
@@ -260,11 +305,11 @@ def test_yaml_file_multiple_values_negative(tmpdir):
     tmpdir.join("playbook.yml").write(
         dedent(
             """
-        - name: 'node 1'
-          version: 85.12.1
-        - name: 'node 2'
-          version: 1.2.3
-    """
+            - name: 'node 1'
+              version: 85.12.1
+            - name: 'node 2'
+              version: 1.2.3
+            """
         ).strip()
     )
 

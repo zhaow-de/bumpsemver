@@ -77,8 +77,8 @@ bumpsemver = "bumpsemver.cli:main"
 pyyaml = "^6.0"
 jsonpath_ng = "*"
 python = ">= 3.10,< 4"
-tomlkit = "*"
 yamlpath = "*"
+python-box = { version = ">=7.0", extras = ["tomli", "tomli-w"] }
 
 [tool.poetry.group.dev.dependencies]
 coverage = "*"

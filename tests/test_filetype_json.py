@@ -311,3 +311,24 @@ def test_json_file_info_logging(tmpdir):
 def test_repr():
     file = ConfiguredJSONFile("fileK", None, None)
     assert repr(file) == "<bumpsemver.files.ConfiguredJSONFile:fileK>"
+
+
+def test_json_invalid_file(tmpdir):
+    tmpdir.chdir()
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+        [bumpsemver]
+        current_version = 99.4.1
+        [bumpsemver:json:package.json]
+        jsonpath = version
+        """
+        ).strip()
+    )
+    tmpdir.join("package.json").write('version = "75.0.1"')
+
+    with pytest.raises(
+        exceptions.VersionNotFoundError,
+        match="Did not find '99.4.1' at jsonpath 'version' in file: 'package.json'",
+    ):
+        main(["minor"])

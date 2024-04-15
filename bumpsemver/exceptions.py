@@ -23,6 +23,10 @@ class WorkingDirectoryIsDirtyError(BumpVersionError):
 class VersionNotFoundError(BumpVersionError):
     """A version number was not found in a source file."""
 
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
 
 class MixedNewLineError(BumpVersionError):
     def __init__(self, message):

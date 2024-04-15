@@ -2,6 +2,7 @@ import io
 import json
 import logging
 from datetime import datetime
+from json import JSONDecodeError
 from typing import Dict, Union
 
 from jsonpath_ng import parse
@@ -50,6 +51,9 @@ class ConfiguredJSONFile(FileTypeBase):
             return _get_json_value(data, self.json_path) == search
         except LookupError as err:
             logger.error(f"invalid path expression: {err!s}", exc_info=err)
+            return False
+        except JSONDecodeError as err:
+            logger.error(f"File '{self.path}' is not a valid json file: {err!s}", exc_info=err)
             return False
 
     def replace(

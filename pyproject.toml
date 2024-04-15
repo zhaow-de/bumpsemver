@@ -78,7 +78,7 @@ pyyaml = "^6.0"
 jsonpath_ng = "*"
 python = ">= 3.10,< 4"
 yamlpath = "*"
-python-box = { version = ">=7.0", extras = ["tomli", "tomli-w"] }
+tomlkit = "*"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "*"

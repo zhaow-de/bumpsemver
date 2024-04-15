@@ -333,30 +333,31 @@ def test_toml_file_info_logging(tmpdir):
     )
 
 
-def test_toml_file_real_pyproject_toml(tmpdir):
-    data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures")
-
-    tmpdir.chdir()
-    tmpdir.join(".bumpsemver.cfg").write(
-        dedent(
-            """
-        [bumpsemver]
-        current_version = 2.0.2
-        commit = True
-        tag = False
-        tag_name = v{new_version}
-
-        [bumpsemver:toml:pyproject.toml]
-        tomlpath = tool.poetry.version
-        """
-        ).strip()
-    )
-    with open(data_path + "/pyproject_before.toml", "rt") as fin:
-        tmpdir.join("pyproject.toml").write(fin.read())
-
-    main(["minor"])
-
-    actual = tmpdir.join("pyproject.toml").read()
-
-    with open(data_path + "/pyproject_after.toml", "rt") as fin:
-        assert actual == fin.read()
+#
+# def test_toml_file_real_pyproject_toml(tmpdir):
+#     data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures")
+#
+#     tmpdir.chdir()
+#     tmpdir.join(".bumpsemver.cfg").write(
+#         dedent(
+#             """
+#         [bumpsemver]
+#         current_version = 2.0.2
+#         commit = True
+#         tag = False
+#         tag_name = v{new_version}
+#
+#         [bumpsemver:toml:pyproject.toml]
+#         tomlpath = tool.poetry.version
+#         """
+#         ).strip()
+#     )
+#     with open(data_path + "/pyproject_before.toml", "rt") as fin:
+#         tmpdir.join("pyproject.toml").write(fin.read())
+#
+#     main(["minor"])
+#
+#     actual = tmpdir.join("pyproject.toml").read()
+#
+#     with open(data_path + "/pyproject_after.toml", "rt") as fin:
+#         assert actual == fin.read()

@@ -4,15 +4,22 @@ import logging
 import os
 import re
 import sre_constants
+import subprocess
 import sys
 from configparser import NoOptionError, RawConfigParser
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Type
 
 from bumpsemver import __title__, __version__
 from bumpsemver.exceptions import (
-    IncompleteVersionRepresentationError,
-    MissingValueForSerializationError,
+    CannotParseVersionError,
+    InvalidConfigSectionError,
+    InvalidFileError,
+    MixedNewLineError,
+    MultiValuesMismatchError,
+    PathNotFoundError,
+    SingleValueMismatchError,
+    VersionNotFoundError,
     WorkingDirectoryIsDirtyError,
 )
 from bumpsemver.files.base import FileTypeBase
@@ -31,30 +38,8 @@ DESCRIPTION = f"{__title__}: v{__version__} (using Python v{python_version})"
 # bumpsemver:toml:value
 # bumpsemver:toml(suffix):value
 # bumpsemver:toml ( suffix with spaces):value
-# bumpsemver:yaml:value
-# bumpsemver:yaml(suffix):value
-# bumpsemver:yaml ( suffix with spaces):value
-# bumpsemver:json:value
-# bumpsemver:json(suffix):value
-# bumpsemver:json ( suffix with spaces):value
-# bumpsemver:file:value
-# bumpsemver:file(suffix):value
-# bumpsemver:file ( suffix with spaces):value
-# bumpsemver:plaintext:value
-# bumpsemver:plaintext(suffix):value
-# bumpsemver:plaintext ( suffix with spaces):value
-RE_DETECT_SECTION_TYPE = re.compile(
-    r"^bumpsemver:("
-    r"(?P<text>plaintext)(\s*\(\s*(?P<text_suffix>[^):]+)\)?)?"
-    r"|"
-    r"(?P<file>file)(\s*\(\s*(?P<file_suffix>[^):]+)\)?)?"
-    r"|"
-    r"(?P<json>json)(\s*\(\s*(?P<json_suffix>[^):]+)\)?)?"
-    r"|"
-    r"(?P<yaml>yaml)(\s*\(\s*(?P<yaml_suffix>[^):]+)\)?)?"
-    r"|"
-    r"(?P<toml>toml)(\s*\(\s*(?P<toml_suffix>[^):]+)\)?)?"
-    r"):(?P<value>.+)",
+RE_CONFIG_SECTION = re.compile(
+    r"^bumpsemver:((?P<file_type>.+?)(\s*\(\s*(?P<file_suffix>[^):]+)\)?)?):(?P<value>.+)",
 )
 
 logger = logging.getLogger(__name__)
@@ -72,48 +57,88 @@ OPTIONAL_ARGUMENTS_THAT_TAKE_VALUES = [
 ]
 
 
-def main(original_args=None):
-    #
-    # determine configuration based on command-line arguments and on-disk configuration files
-    args, known_args, root_parser, positionals = _parse_arguments_phase_1(original_args)
-    _setup_logging(known_args.verbose)
-    vcs_info = _determine_vcs_usability()
-    defaults = _determine_current_version(vcs_info)
-    explicit_config = None
-    if hasattr(known_args, "config_file"):
-        explicit_config = known_args.config_file
-    config_file = _determine_config_file(explicit_config)
-    config, config_file_exists, config_newlines, files = _load_configuration(config_file, explicit_config, defaults)
-    known_args, parser2, remaining_argv = _parse_arguments_phase_2(args, defaults, root_parser)
-    version_config = _setup_version_config(known_args)
-    current_version = version_config.parse(known_args.current_version)
-    context = {**time_context, **vcs_info}
-    #
-    # calculate the desired new version
-    new_version = _assemble_new_version(
-        current_version, defaults, known_args.current_version, positionals, version_config
-    )
-    args, file_names = _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2)
-    new_version = _parse_new_version(args, new_version, version_config)
+class SectionConfig:
+    def __init__(self, handler: Type[FileTypeBase], xpath_supported: bool, props: Dict[str, str]):
+        self.handler = handler
+        self.xpath_supported = xpath_supported
+        self.props = props
 
-    # replace version in target files
-    vcs = _determine_vcs_dirty(defaults)
-    files.extend(ConfiguredPlainTextFile(file_name, version_config) for file_name in (file_names or positionals[1:]))
-    _check_files_contain_version(files, current_version, context)
-    _replace_version_in_files(files, current_version, new_version, args.dry_run, context)
-    config.remove_option("bumpsemver", "new_version")
 
-    # store the new version
-    _update_config_file(config, config_file, config_newlines, config_file_exists, args.new_version, args.dry_run)
+def main(original_args=None) -> None:
+    try:
+        #
+        # determine configuration based on command-line arguments and on-disk configuration files
+        args, known_args, root_parser, positionals = _parse_arguments_phase_1(original_args)
+        _setup_logging(known_args.verbose)
+        vcs_info = _determine_vcs_usability()
+        defaults = _determine_current_version(vcs_info)
+        explicit_config = None
+        if hasattr(known_args, "config_file"):
+            explicit_config = known_args.config_file
+        config_file = _determine_config_file(explicit_config)
+        config, config_file_exists, config_newlines, files = _load_configuration(config_file, explicit_config, defaults)
+        known_args, parser2, remaining_argv = _parse_arguments_phase_2(args, defaults, root_parser)
+        version_config = _setup_version_config(known_args)
+        current_version = version_config.parse(known_args.current_version)
+        context = {**time_context, **vcs_info}
+        #
+        # calculate the desired new version
+        new_version = _assemble_new_version(
+            current_version, defaults, known_args.current_version, positionals, version_config
+        )
+        args, file_names = _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2)
+        new_version = _parse_new_version(args, new_version, version_config)
 
-    # commit and tag
-    if vcs:
-        context = _commit_to_vcs(files, config_file, config_file_exists, vcs, args, current_version, new_version)
-        _tag_in_vcs(vcs, context, args)
+        # replace the version in target files
+        vcs = _determine_vcs_dirty(defaults)
+        files.extend(
+            ConfiguredPlainTextFile(file_name, version_config) for file_name in (file_names or positionals[1:])
+        )
+        _check_files_contain_version(files, current_version, context)
+        _replace_version_in_files(files, current_version, new_version, args.dry_run, context)
+        config.remove_option("bumpsemver", "new_version")
+
+        # store the new version
+        _update_config_file(config, config_file, config_newlines, config_file_exists, args.new_version, args.dry_run)
+
+        # commit and tag
+        if vcs:
+            context = _commit_to_vcs(files, config_file, config_file_exists, vcs, args, current_version, new_version)
+            _tag_in_vcs(vcs, context, args)
+
+        sys.exit(0)
+    except argparse.ArgumentTypeError as exc:
+        logger.error(f"{''.join(exc.args)}")
+        sys.exit(1)
+    except FileNotFoundError as exc:
+        logger.error(f"FileNotFound. {exc!s}")
+        sys.exit(2)
+    except MixedNewLineError as exc:
+        logger.warning(f"{exc.message}")
+        sys.exit(3)
+    except (
+        CannotParseVersionError,
+        InvalidConfigSectionError,
+        InvalidFileError,
+        MultiValuesMismatchError,
+        PathNotFoundError,
+        SingleValueMismatchError,
+        VersionNotFoundError,
+    ) as exc:
+        logger.error(f"{exc.message}")
+        sys.exit(4)
+    except WorkingDirectoryIsDirtyError as exc:
+        logger.error(f"{exc.message}\n\nUse --allow-dirty to override this if you know what you're doing.")
+        sys.exit(5)
+    except subprocess.CalledProcessError:
+        sys.exit(10)
+    except Exception as exc:
+        logger.error(f"Unexpected error occurred: {exc!s}")
+        sys.exit(128)
 
 
 def split_args_in_optional_and_positional(args):
-    # manually parsing positional arguments because stupid argparse can't mix positional and optional arguments
+    # manually parsing positional arguments because with argparse we cannot mix positional and optional arguments
 
     positions = []
     for i, arg in enumerate(args):
@@ -165,11 +190,12 @@ def _parse_arguments_phase_1(original_args):
     return args, known_args, root_parser, positionals
 
 
-def _setup_logging(verbose):
+def _setup_logging(verbose: int) -> None:
     try:
         log_level = [logging.WARNING, logging.INFO, logging.DEBUG][verbose]
     except IndexError:
         log_level = logging.DEBUG
+    logging.basicConfig(format="%(levelname)s:%(message)s")
     root_logger = logging.getLogger("")
     root_logger.setLevel(log_level)
     logger.debug(f"Starting {DESCRIPTION}")
@@ -206,40 +232,63 @@ def _config_file_exists(config_file: str, explicit_config: bool) -> bool:
     return True
 
 
-def _parse_sections(config: RawConfigParser, defaults, sections):
-    files: List[FileTypeBase] = []
-    for section_name in sections:
-        section_type_match = RE_DETECT_SECTION_TYPE.match(section_name)
+def _check_section_config(section: str, acceptable_keys: List[str], actual_config: List[str]):
+    unknown_keys = [item for item in actual_config if item not in acceptable_keys]
+    if unknown_keys:
+        raise InvalidConfigSectionError(f"Invalid config file. Unknown keys {unknown_keys} in section '{section}'")
 
-        if not section_type_match:
+
+def _parse_sections(config: RawConfigParser, defaults, sections):
+    file_types_config = {
+        "plaintext": SectionConfig(
+            ConfiguredPlainTextFile,
+            False,
+            {"search": "{current_version}", "replace": "{new_version}"},
+        ),
+        "file": SectionConfig(
+            ConfiguredPlainTextFile,
+            False,
+            {"search": "{current_version}", "replace": "{new_version}"},
+        ),
+        "json": SectionConfig(ConfiguredJSONFile, True, {"jsonpath": "version"}),
+        "yaml": SectionConfig(ConfiguredYAMLFile, True, {"yamlpath": "version"}),
+        "toml": SectionConfig(ConfiguredTOMLFile, True, {"tomlpath": "version"}),
+    }
+
+    files: List[FileTypeBase] = []
+
+    for section_name in sections:
+        parsed_section_header = RE_CONFIG_SECTION.match(section_name)
+
+        if not parsed_section_header:
             continue
 
-        section_type = section_type_match.groupdict()
-        section_value = section_type.get("value")
-        section_config = dict(config.items(section_name))
+        section_type = parsed_section_header.groupdict()
+        file_type = section_type.get("file_type")
+        filename = section_type.get("value")
+        section_props = dict(config.items(section_name))
 
-        filename = section_value
+        if not [x for x in file_types_config.keys() if x == file_type]:
+            raise InvalidConfigSectionError(
+                f"Invalid config file. Unknown file type '{file_type}' in section '{section_name}'"
+            )
 
-        if section_type.get("file") or section_type.get("text"):
-            if section_type.get("file"):
-                logger.warning("Using 'file' section type is deprecated, please use 'plaintext' instead.")
-            if "search" not in section_config:
-                section_config["search"] = defaults.get("search", "{current_version}")
-            if "replace" not in section_config:
-                section_config["replace"] = defaults.get("replace", "{new_version}")
-            files.append(ConfiguredPlainTextFile(filename, VersionConfig(**section_config)))
-        elif section_type.get("json"):
-            jsonpath = section_config.pop("jsonpath", defaults.get("jsonpath", "version"))
-            files.append(ConfiguredJSONFile(filename, jsonpath, VersionConfig(**section_config)))
-        elif section_type.get("yaml"):
-            yamlpath = section_config.pop("yamlpath", defaults.get("yamlpath", "version"))
-            files.append(ConfiguredYAMLFile(filename, yamlpath, VersionConfig(**section_config)))
-        elif section_type.get("toml"):
-            tomlpath = section_config.pop("tomlpath", defaults.get("tomlpath", "version"))
-            files.append(ConfiguredTOMLFile(filename, tomlpath, VersionConfig(**section_config)))
-        #
-        # the other cases must not be possible,
-        # because the regex matching at the beginning of this function should filter them out
+        type_info = file_types_config.get(file_type)
+
+        _check_section_config(section_name, list(type_info.props.keys()), [*section_props])
+        if file_type == "file":
+            logger.warning("Using 'file' section type is deprecated, please use 'plaintext' instead.")
+
+        for k, v in type_info.props.items():
+            if k not in section_props:
+                section_props[k] = defaults.get(k, v)
+
+        if type_info.xpath_supported:
+            path_key = next(iter(type_info.props.keys()))
+            path = section_props.pop(path_key, None)
+            files.append(type_info.handler(filename, VersionConfig(**section_props), file_type, path))
+        else:
+            files.append(type_info.handler(filename, VersionConfig(**section_props)))
 
     return files
 
@@ -326,10 +375,6 @@ def _assemble_new_version(current_version, defaults, arg_current_version, positi
                 new_version = current_version.bump(positionals[0], version_config.order())
                 logger.info(f"Values are now: {key_value_string(new_version.values)}")
                 defaults["new_version"] = version_config.serialize(new_version)
-        except MissingValueForSerializationError as err:
-            logger.info(f"Opportunistic finding of new_version failed: {err.message}")
-        except IncompleteVersionRepresentationError as err:
-            logger.info(f"Opportunistic finding of new_version failed: {err.message}")
         except KeyError:
             logger.info("Opportunistic finding of new_version failed")
     return new_version
@@ -453,10 +498,9 @@ def _determine_vcs_dirty(defaults):
 
     try:
         Git.assert_non_dirty()
-    except WorkingDirectoryIsDirtyError as err:
+    except WorkingDirectoryIsDirtyError:
         if defaults["allow_dirty"]:
             return None
-        logger.warning(f"{err.message}\n\nUse --allow-dirty to override this if you know what you're doing.")
         raise
 
     return Git
@@ -498,7 +542,7 @@ def _update_config_file(config, config_file, config_newlines, config_file_exists
 
 
 def _commit_to_vcs(files, config_file, config_file_exists, vcs, args, current_version, new_version):
-    commit_files = [f.path for f in files]
+    commit_files = [f.filename for f in files]
     if config_file_exists:
         commit_files.append(config_file)
     assert vcs.is_usable(), f"Did find '{vcs.__name__}' unusable, unable to commit."

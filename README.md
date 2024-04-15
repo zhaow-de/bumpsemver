@@ -108,7 +108,7 @@ bumpsemver --current-version 1.1.9 major setup.py
 
 `bumpsemver` looks up configuration file `.bumpsemver.cfg` at the current directory.
 The config file uses [`ini` syntax](https://en.wikipedia.org/wiki/INI_file).
-It consists of one general section `[bumpsemver]` and zero or more `[bumpsemver:type(postfix):filename]` file sections. 
+It consists of one general section `[bumpsemver]` and zero or more `[bumpsemver:type(suffix):filename]` file sections. 
 
 Example `.bumpsemver.cfg`:
 

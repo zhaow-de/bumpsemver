@@ -49,9 +49,7 @@ class Git:
         ]
 
         if lines:
-            raise WorkingDirectoryIsDirtyError(
-                "Git working directory is not clean:\n{}".format(b"\n".join(lines).decode())
-            )
+            raise WorkingDirectoryIsDirtyError(lines)
 
     @classmethod
     def latest_tag_info(cls):

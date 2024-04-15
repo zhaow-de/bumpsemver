@@ -26,15 +26,6 @@ def test_simplest_query_boolean_pos():
     assert obj is False
 
 
-#
-# def test_simplest_query_boolean_neg():
-#     obj = TomlPath.retrieve("a = True", "a")
-#     assert obj == "True"
-#
-#     obj = TomlPath.retrieve("a = False", "a")
-#     assert obj == "False"
-
-
 def test_simplest_query_array():
     obj = TomlPath.query("a = [1, 2, 3]", "a")
     assert obj == [1, 2, 3]
@@ -94,6 +85,29 @@ def test_query_array_all_elements():
 
     obj = TomlPath.query(toml, "a.value")
     assert obj == [[1, 2], [3, 4]]
+
+
+def test_query_array_partial_elements():
+    toml = dedent(
+        """
+        [[release]]
+        name = "node 1"
+        version = "86.11.1"
+
+        [[release]]
+        name = "node 2"
+        version = "86.11.1"
+
+        [[release]]
+        name = "node 3"
+
+        [release.child]
+        version = "86.11.1"
+        """
+    ).strip()
+
+    obj = TomlPath.query(toml, "release.version")
+    assert obj == ["86.11.1", "86.11.1"]
 
 
 def test_simplest_update_int():
@@ -354,3 +368,66 @@ version = 10
 
     result = TomlPath.update(orig, "dummy.a.version", 10)
     assert result == expected
+
+
+def test_tomlpath_is_valid():
+    # Valid cases
+    assert TomlPath.is_valid("a")
+    assert TomlPath.is_valid("a.")
+    assert TomlPath.is_valid(".a")
+    assert TomlPath.is_valid("a.b")
+    assert TomlPath.is_valid("a.b[0]")
+    assert TomlPath.is_valid("a.b[0].c")
+    assert TomlPath.is_valid("a.b[0].c[1]")
+    assert TomlPath.is_valid("a.b[]")
+    assert TomlPath.is_valid("a[].b[0].c[]")
+    assert TomlPath.is_valid('"a b"')
+    assert TomlPath.is_valid('"a b".c')
+    assert TomlPath.is_valid('"a b".c."d"[1]')
+    assert TomlPath.is_valid('"a b".c[0]')
+    assert TomlPath.is_valid('"a b".c[].d')
+    assert TomlPath.is_valid('"a b"[0]')
+    assert TomlPath.is_valid('"a b"[].c')
+    assert TomlPath.is_valid('"ab"')
+    assert TomlPath.is_valid('"ab"."c"')
+    assert TomlPath.is_valid('"ab"."c".d')
+    assert TomlPath.is_valid('a."b c".d')
+    assert TomlPath.is_valid('a."b c"[0]')
+    assert TomlPath.is_valid('a."b c"[].d')
+    assert TomlPath.is_valid('a[0]."b c"')
+    assert TomlPath.is_valid('a[0]."b c".d')
+    assert TomlPath.is_valid('a[]."b c"')
+    assert TomlPath.is_valid('a[].b[0]."c d"')
+    assert TomlPath.is_valid('ab[0].c."d"')
+    assert TomlPath.is_valid('ab[0].c."d"[1]')
+
+    # Invalid cases
+    assert not TomlPath.is_valid(" ")
+    assert not TomlPath.is_valid("[1]")
+    assert not TomlPath.is_valid("[]")
+    assert not TomlPath.is_valid("[].a")
+    assert not TomlPath.is_valid("a.[]")
+    assert not TomlPath.is_valid("a.[].b")
+    assert not TomlPath.is_valid("a[")
+    assert not TomlPath.is_valid("a[0][0]")
+    assert not TomlPath.is_valid("a[0][]")
+    assert not TomlPath.is_valid("a[[1]]")
+    assert not TomlPath.is_valid("a[][0]")
+    assert not TomlPath.is_valid("a[][]")
+    assert not TomlPath.is_valid("a[b]")
+    assert not TomlPath.is_valid("a]")
+    assert not TomlPath.is_valid(" a")
+    assert not TomlPath.is_valid("a b")
+    assert not TomlPath.is_valid("'a b'")
+    assert not TomlPath.is_valid("'ab'")
+    assert not TomlPath.is_valid("'ab")
+    assert not TomlPath.is_valid("a'b")
+    assert not TomlPath.is_valid("'ab")
+    assert not TomlPath.is_valid("a b.c")
+    assert not TomlPath.is_valid("a b[0]")
+    assert not TomlPath.is_valid('a" b')
+    assert not TomlPath.is_valid('a"')
+    assert not TomlPath.is_valid('"a"b"')
+    # this should be a valid path, but for the simplicity of the implementation, we consider it invalid
+    # to address the indexed key with whitespace, use the following equivalent path: '"a b"[0].c'
+    assert not TomlPath.is_valid('"a b[0]".c')

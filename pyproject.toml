@@ -21,10 +21,12 @@ docstring-quote = "double"
 select = ["E", "W", "F", "I", "N", "B", "BLE", "C", "D", "E", "F", "I", "N", "S", "T", "W", "RUF", "NPY", "PD", "PGH", "ANN", "C90", "PLC", "PLE", "PLW", "TCH"]
 ignore = [
     "ANN001", "ANN002", "ANN003", "ANN202", "ANN206", "ANN101", "ANN102", "ANN201", "ANN204", "ANN401",
-    "S101", "S104", "S603", "S607",
+    "BLE001",
     "D100", "D101", "D102", "D103", "D104", "D105", "D107", "D200", "D203", "D205", "D212", "D400", "D401", "D404",
-    "TCH001", "TCH002",
+    "PGH004",
     "RUF013",
+    "S101", "S104", "S603", "S607",
+    "TCH001", "TCH002",
 ]
 
 # Allow unused variables when underscore-prefixed.
@@ -74,11 +76,11 @@ keywords = ["bumpsemver", "semver", "version", "release"]
 bumpsemver = "bumpsemver.cli:main"
 
 [tool.poetry.dependencies]
-pyyaml = "^6.0"
-jsonpath_ng = "*"
 python = ">= 3.10,< 4"
-yamlpath = "*"
+"ruamel.yaml" = "*"  # we prefer pyyaml, but ruamel.yaml is being used by yamlpath. no reason to have both.
+jsonpath-ng = "*"
 tomlkit = "*"
+yamlpath = "*"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "*"

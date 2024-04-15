@@ -5,6 +5,7 @@ from testfixtures import LogCapture
 
 from bumpsemver.exceptions import MixedNewLineError
 from bumpsemver.files.base import FileTypeBase
+from bumpsemver.version_part import VersionConfig
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,8 @@ class ConfiguredDummyFile(FileTypeBase):
     def __repr__(self):
         super().__repr__()
 
-    def __init__(self, path, version_config):
-        super().__init__(path, version_config, "dummy", logger)
+    def __init__(self, filename: str, version_config: VersionConfig, file_type="dummy", path: str = None):
+        super().__init__(filename, version_config, file_type, path, logger)
 
     def should_contain_version(self, version, context):
         pass
@@ -30,7 +31,7 @@ def test_update_no_change(tmpdir):
     tmpdir.chdir()
     #
     tmpdir.join("file1").write("Line 1\nLine 2\n")
-    file = ConfiguredDummyFile("file1", None)
+    file = ConfiguredDummyFile("file1", VersionConfig())
 
     with LogCapture() as log_capture1:
         file.update_file("Line 1\nLine 2\n", "Line 1\nLine 2\n", True)
@@ -51,7 +52,7 @@ def test_update_changed(tmpdir):
     tmpdir.chdir()
     #
     tmpdir.join("file2").write("Line 1\nLine 2\n")
-    file = ConfiguredDummyFile("file2", None)
+    file = ConfiguredDummyFile("file2", VersionConfig())
 
     with LogCapture() as log_capture1:
         file.update_file("Line 1\nLine 2\n", "Line 1\nLine 3\n", True)
@@ -75,7 +76,7 @@ def test_update_mixed_newlines(tmpdir):
     wf = tmpdir.join("file3")
     with open(wf, "wt", newline="") as f:
         f.write("Line 1\r\nLine 2\nLine 3\rLine 4\n\n")
-    file = ConfiguredDummyFile("file3", None)
+    file = ConfiguredDummyFile("file3", VersionConfig())
 
     with pytest.raises(MixedNewLineError) as ex:
         file.update_file("Line 1\nLine 2\n", "Line 1\nLine 2\n", True)

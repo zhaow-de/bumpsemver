@@ -1,6 +1,3 @@
-# pylint: skip-file
-
-# noinspection PyPackageRequirements
 import pytest
 
 from bumpsemver.functions import NumericFunction

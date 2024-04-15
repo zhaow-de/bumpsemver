@@ -1,5 +1,3 @@
-# pylint: skip-file
-
 from bumpsemver.version_part import NumericVersionPartConfiguration, VersionPart
 
 vpc = NumericVersionPartConfiguration()

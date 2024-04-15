@@ -1,9 +1,11 @@
 import logging
 import re
 import string
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
-from bumpsemver.exceptions import IncompleteVersionRepresentationError, MissingValueForSerializationError
+from bumpsemver.exceptions import (
+    CannotParseVersionError,
+)
 from bumpsemver.functions import NumericFunction
 from bumpsemver.utils import key_value_string
 
@@ -151,52 +153,24 @@ class VersionConfig:
 
         return version
 
-    def _serialize(self, version: Version, serialize_format: str, raise_if_incomplete=False) -> str:
+    # noinspection PyMethodMayBeStatic
+    def _serialize(self, version: Version, serialize_format: str) -> str:
         """
         Attempts to serialize a version with the given serialization format.
-
-        Raises MissingValueForSerializationError if not serializable
         """
         values: Dict[str, VersionPart] = {}
         for key in version:
             values[key] = version[key]
 
-        try:
-            # test whether all parts required in the format have values
-            serialized = serialize_format.format(**values)
-
-        except KeyError as err:
-            missing_key = getattr(err, "message", err.args[0])
-            # pylint: disable=raise-missing-from
-            raise MissingValueForSerializationError(
-                f"Did not find key {missing_key!r} in {version!r} when serializing version number"
-            ) from None
-
-        keys_needing_representation: Set[str] = set()
-
-        for key in self.order():
-            value = values[key]
-
-            if not isinstance(value, VersionPart):
-                # values coming from environment variables don't need representation
-                continue
-
-            keys_needing_representation.add(key)
-
-        required_by_format = set(labels_for_format(serialize_format))
-
-        # try whether all parsed keys are represented
-        if raise_if_incomplete:
-            if not keys_needing_representation <= required_by_format:
-                raise IncompleteVersionRepresentationError(
-                    "Could not represent '{}' in format '{}'".format(
-                        "', '".join(keys_needing_representation ^ required_by_format), serialize_format
-                    )
-                )
+        # test whether all parts required in the format have values
+        serialized = serialize_format.format(**values)
 
         return serialized
 
     def serialize(self, version: Version) -> str:
-        serialized = self._serialize(version, self.serialize_format)
-        logger.debug(f"Serialized to '{serialized}'")
-        return serialized
+        try:
+            serialized = self._serialize(version, self.serialize_format)
+            logger.debug(f"Serialized to '{serialized}'")
+            return serialized
+        except TypeError as exc:
+            raise CannotParseVersionError() from exc

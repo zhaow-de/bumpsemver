@@ -1,0 +1,6 @@
+[virtualenvs]
+create = true
+in-project = true
+prefer-active-python = false
+options.no-setuptools = true
+prompt = "{project_name}-py{python_version}"

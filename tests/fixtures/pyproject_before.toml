@@ -1,0 +1,89 @@
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+select = ["E", "F", "W", "Q", "PL", "AIR"]
+ignore = ["PLR2004"]
+
+[tool.ruff.pylint]
+max-args = 11
+
+# write some comments here
+[tool.ruff.flake8-quotes]
+# here
+docstring-quotes = "double"  # and here
+
+[tool.poetry]
+# an empty line below, will be retainted if we use toml linting
+
+# the property below is going to be changed
+version = "2.0.2"  #   this property is going to be changed
+# an empty line below, will be removed if we use toml linting
+
+###### # # # the property above is going to be changed
+name = "attribute-predictor"
+description = "Attribute Predictor"
+authors = ["Ringier AG <info@ringier.ch>"]
+packages = [{include = "attribute_predictor"}]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = ">=3.10, <3.11"
+pyyaml = "*"
+awswrangler = "^3.5.2"
+xgboost = "~1.7.0"
+numpy = "^1.22.2"
+pandas = "^2.0"
+rcplus-alloy-common = "^5.0.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1"
+mypy = "^1.6"
+jupyter = "^1.0"
+black = "^22.10"
+dvc = {"version"="^2.31.0", extras=["s3"]}
+bumpsemver = "*"
+matplotlib = "^3.6"
+pytest = "*"
+pylint-quotes = "^0.2.3"
+moto = "<5"
+pytest-env = "^1.1.3"
+
+[tool.poetry.group.types.dependencies]
+types-boto3 = "^1.0.2"
+types-pyyaml = "^6.0.12.2"
+pandas-stubs = "^2.2.0.240218"
+
+[tool.pylint.main]
+string-quote = "double"
+triple-quote = "double"
+docstring-quote = "double"
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = [
+    "scipy.*",
+    "awswrangler.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-rsxX -vv --capture=tee-sys"
+testpaths = ["tests"]
+python_files="tests/*.py"
+log_cli = "0"
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+
+env = [
+    "AWS_ACCESS_KEY_ID=testing",
+    "AWS_SECRET_ACCESS_KEY=testing",
+    "AWS_SECURITY_TOKEN=testing",
+    "AWS_SESSION_TOKEN=testing",
+    "AWS_DEFAULT_REGION=us-east-1",
+    "AWS_REGION=us-east-1",
+]

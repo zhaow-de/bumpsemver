@@ -1,0 +1,142 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+# Same as Black.
+line-length = 120
+
+[tool.ruff.lint.pylint]
+max-args = 11
+
+[tool.pylint.main]
+string-quote = "double"
+triple-quote = "double"
+docstring-quote = "double"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "B", "BLE", "C", "D", "E", "F", "I", "N", "S", "T", "W", "RUF", "NPY", "PD", "PGH", "ANN", "C90", "PLC", "PLE", "PLW", "TCH"]
+ignore = [
+    "ANN001", "ANN002", "ANN003", "ANN202", "ANN206", "ANN101", "ANN102", "ANN201", "ANN204", "ANN401",
+    "BLE001",
+    "D100", "D101", "D102", "D103", "D104", "D105", "D107", "D200", "D203", "D205", "D212", "D400", "D401", "D404",
+    "PGH004",
+    "RUF013",
+    "S101", "S104", "S603", "S607",
+    "TCH001", "TCH002",
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+typing-modules = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]
+
+[tool.ruff.lint.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR0913", "PLR0915", "PGH003", "ANN001", "ANN202", "ANN201", "PLR0912", "TRY301", "PLW0603", "PLR2004", "ANN101", "S106", "TRY201", "ANN003", "ANN002", "S105", "TRY003"]
+
+[tool.ruff.lint.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+order-by-type = true
+
+[tool.poetry]
+name = "bumpsemver"
+version = "2.0.0"
+description = "Bump semver for git repos with a single command"
+readme = "README.md"
+authors = [ "Zhao Wang <zhaow.km@gmail.com>" ]
+license = "MIT"
+repository = "https://github.com/zhaow-de/bumpsemver"
+classifiers = [
+    'Development Status :: 4 - Beta',
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Version Control",
+    "Topic :: System :: Software Distribution",
+]
+keywords = ["bumpsemver", "semver", "version", "release"]
+
+[tool.poetry.scripts]
+bumpsemver = "bumpsemver.cli:main"
+
+[tool.poetry.dependencies]
+python = ">= 3.10,< 4"
+"ruamel.yaml" = "*"  # we prefer pyyaml, but ruamel.yaml is being used by yamlpath. no reason to have both.
+jsonpath-ng = "*"
+tomlkit = "*"
+yamlpath = "*"
+
+[tool.poetry.group.dev.dependencies]
+coverage = "*"
+generate-changelog = ">=0.7.6"
+git-fame = ">=1.12.2"
+mypy = "*"
+pre-commit = "*"
+pylint-quotes = ">=0.2.0"
+pyparsing = ">=3.1.0"
+pytest = ">=7.2.0"
+pytest-cov = "*"
+pytest-sugar = "*"
+ruff = ">=0.0.287"
+setuptools = ">=68.1.2"
+testfixtures = "*"
+types-pyyaml = "^6.0"
+
+[tool.coverage.run]
+branch = true
+omit = ["**/test_*.py", "**/__main__.py", "**/aliases.py"]
+
+[tool.coverage.report]
+omit = [
+    "*site-packages*",
+    "*tests*",
+    "*.tox*",
+    "exceptions.py",
+]
+show_missing = true
+exclude_lines = [
+    "raise NotImplementedError",
+    "pragma: no-coverage",
+    "pragma: no-cov",
+]
+
+[tool.coverage.html]
+directory = "test-reports/htmlcov"
+
+[tool.coverage.xml]
+output = "test-reports/coverage.xml"
+
+[tool.pytest.ini_options]
+norecursedirs = [
+    ".*",
+    "build",
+    "dist",
+    "{arch}",
+    "*.egg",
+    "venv",
+    "requirements*",
+    "lib",
+]
+python_files = "test*.py"
+addopts = [
+    "--cov=bumpsemver",
+    "--cov-branch",
+    "--cov-report=term",
+    "--cov-report=html",
+]

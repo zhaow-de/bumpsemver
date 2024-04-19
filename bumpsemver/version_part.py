@@ -1,8 +1,11 @@
 import logging
 import re
 import string
+from typing import Dict, List, Optional
 
-from bumpsemver.exceptions import (MissingValueForSerializationException, IncompleteVersionRepresentationException)
+from bumpsemver.exceptions import (
+    CannotParseVersionError,
+)
 from bumpsemver.functions import NumericFunction
 from bumpsemver.utils import key_value_string
 
@@ -12,14 +15,14 @@ logger = logging.getLogger(__name__)
 class NumericVersionPartConfiguration:
     function_cls = NumericFunction
 
-    def __init__(self, *args, **kwds):
-        self.function = self.function_cls(*args, **kwds)
+    def __init__(self, *args, **kwargs):
+        self.function = self.function_cls(*args, **kwargs)
 
     @property
     def first_value(self):
         return str(self.function.first_value)
 
-    def bump(self, value=None):
+    def bump(self, value=None) -> str:
         return self.function.bump(value)
 
 
@@ -29,7 +32,7 @@ class VersionPart:
     object that rules how the part behaves when increased or reset.
     """
 
-    def __init__(self, value, config=None):
+    def __init__(self, value: str, config=None):
         self._value = value
 
         if config is None:
@@ -61,7 +64,7 @@ class VersionPart:
 
 
 class Version:
-    def __init__(self, values, original=None):
+    def __init__(self, values: Dict[str, VersionPart], original=None):
         self.values = dict(values)
         self.original = original
 
@@ -77,7 +80,7 @@ class Version:
     def __repr__(self):
         return f"<bumpsemver.Version:{key_value_string(self.values)}>"
 
-    def bump(self, part_name, order):
+    def bump(self, part_name: str, order: List[str]):
         bumped = False
 
         new_values = {}
@@ -99,35 +102,31 @@ class Version:
 
 
 def labels_for_format(serialize_format):
-    return (
-        label for _, label, _, _ in string.Formatter().parse(serialize_format)
-        if label
-    )
+    return (label for _, label, _, _ in string.Formatter().parse(serialize_format) if label)
 
 
 class VersionConfig:
     """
-    Holds a complete representation of a version string
+    Holds a complete representation of a version string.
     """
 
-    def __init__(self, search=None, replace=None, part_configs=None):
-
+    def __init__(
+        self,
+        search: str = None,
+        replace: str = None,
+    ):
         self.parse_regex = re.compile(r"(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)", re.VERBOSE)
         self.serialize_format = "{major}.{minor}.{patch}"
 
-        if not part_configs:
-            part_configs = {}
-
-        self.part_configs = part_configs
         self.search = search
         self.replace = replace
 
     def order(self):
-        # currently, order depends on the first given serialization format this seems like a good idea because this should be the most
-        # complete format
+        # currently, order depends on the first given serialization format this seems like enough
+        # because this should be the most complete format
         return labels_for_format(self.serialize_format)
 
-    def parse(self, version_string):
+    def parse(self, version_string: str = None) -> Optional[Version]:
         if not version_string:
             return None
 
@@ -139,11 +138,14 @@ class VersionConfig:
 
         _parsed = {}
         if not match:
-            logger.warning(f"Evaluating 'parse' option: '{self.parse_regex.pattern}' does not parse current version '{version_string}'")
+            logger.warning(
+                f"Evaluating 'parse' option: '{self.parse_regex.pattern}' "
+                f"does not parse current version '{version_string}'"
+            )
             return None
 
         for key, value in match.groupdict().items():
-            _parsed[key] = VersionPart(value, self.part_configs.get(key))
+            _parsed[key] = VersionPart(value, None)
 
         version = Version(_parsed, version_string)
 
@@ -151,51 +153,24 @@ class VersionConfig:
 
         return version
 
-    def _serialize(self, version, serialize_format, context, raise_if_incomplete=False):
+    # noinspection PyMethodMayBeStatic
+    def _serialize(self, version: Version, serialize_format: str) -> str:
         """
         Attempts to serialize a version with the given serialization format.
-
-        Raises MissingValueForSerializationException if not serializable
         """
-        values = context.copy()
+        values: Dict[str, VersionPart] = {}
         for key in version:
             values[key] = version[key]
 
+        # test whether all parts required in the format have values
+        serialized = serialize_format.format(**values)
+
+        return serialized
+
+    def serialize(self, version: Version) -> str:
         try:
-            # test whether all parts required in the format have values
-            serialized = serialize_format.format(**values)
-
-        except KeyError as err:
-            missing_key = getattr(err, "message", err.args[0])
-            # pylint: disable=raise-missing-from
-            raise MissingValueForSerializationException(
-                f"Did not find key {repr(missing_key)} in {repr(version)} when serializing version number"
-            )
-
-        keys_needing_representation = set()
-
-        for key in self.order():
-            value = values[key]
-
-            if not isinstance(value, VersionPart):
-                # values coming from environment variables don't need representation
-                continue
-
-            keys_needing_representation.add(key)
-
-        required_by_format = set(labels_for_format(serialize_format))
-
-        # try whether all parsed keys are represented
-        if raise_if_incomplete:
-            if not keys_needing_representation <= required_by_format:
-                raise IncompleteVersionRepresentationException(
-                    "Could not represent '{}' in format '{}'".format("', '".join(keys_needing_representation ^ required_by_format),
-                                                                     serialize_format)
-                )
-
-        return serialized
-
-    def serialize(self, version, context):
-        serialized = self._serialize(version, self.serialize_format, context)
-        logger.debug(f"Serialized to '{serialized}'")
-        return serialized
+            serialized = self._serialize(version, self.serialize_format)
+            logger.debug(f"Serialized to '{serialized}'")
+            return serialized
+        except TypeError as exc:
+            raise CannotParseVersionError() from exc

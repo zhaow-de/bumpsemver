@@ -3,7 +3,6 @@ import io
 import logging
 import os
 import re
-import sre_constants
 import subprocess
 import sys
 from configparser import NoOptionError, RawConfigParser
@@ -78,7 +77,7 @@ def main(original_args=None) -> None:
         config_file = _determine_config_file(explicit_config)
         config, config_file_exists, config_newlines, files = _load_configuration(config_file, explicit_config, defaults)
         known_args, parser2, remaining_argv = _parse_arguments_phase_2(args, defaults, root_parser)
-        version_config = _setup_version_config(known_args)
+        version_config = VersionConfig(search=known_args.search, replace=known_args.replace)
         current_version = version_config.parse(known_args.current_version)
         context = {**time_context, **vcs_info}
         #
@@ -185,6 +184,12 @@ def _parse_arguments_phase_1(original_args):
         default=False,
         help="Don't abort if working directory is dirty",
         required=False,
+    )
+    root_parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+        help="Print version and exit",
     )
     known_args, _ = root_parser.parse_known_args(args)
     return args, known_args, root_parser, positionals
@@ -356,14 +361,6 @@ def _parse_arguments_phase_2(args, defaults, root_parser):
     defaults.update(vars(known_args))
 
     return known_args, parser2, remaining_argv
-
-
-def _setup_version_config(known_args):
-    try:
-        version_config = VersionConfig(search=known_args.search, replace=known_args.replace)
-    except sre_constants.error:
-        sys.exit(1)
-    return version_config
 
 
 def _assemble_new_version(current_version, defaults, arg_current_version, positionals, version_config):

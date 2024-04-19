@@ -77,6 +77,7 @@ options:
   --verbose             Print verbose logging to stderr (default: 0)
   --allow-dirty         Don't abort if working directory is dirty (default:
                         False)
+  --version             Print version and exit
   --search SEARCH       Template for complete string to search (default:
                         {current_version})
   --replace REPLACE     Template for complete string to replace (default:

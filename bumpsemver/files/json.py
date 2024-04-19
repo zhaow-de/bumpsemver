@@ -13,7 +13,6 @@ from bumpsemver.exceptions import (
     PathNotFoundError,
     SingleValueMismatchError,
 )
-from bumpsemver.files import FileTypes
 from bumpsemver.files.base import FileTypeBase
 from bumpsemver.version_part import Version, VersionConfig
 
@@ -31,7 +30,7 @@ def _set_json_value(obj, path, value):
 
 
 class ConfiguredJSONFile(FileTypeBase):
-    def __init__(self, filename: str, version_config: VersionConfig, file_type=FileTypes.JSON, jsonpath: str = None):
+    def __init__(self, filename: str, version_config: VersionConfig, file_type="json", jsonpath: str = None):
         super().__init__(filename, version_config, file_type, jsonpath, logger)
 
     def should_contain_version(self, version: Version, context: dict) -> None:

@@ -19,7 +19,6 @@ from bumpsemver.exceptions import (
     PathNotFoundError,
     SingleValueMismatchError,
 )
-from bumpsemver.files import FileTypes
 from bumpsemver.files.base import FileTypeBase
 from bumpsemver.version_part import Version, VersionConfig
 
@@ -33,7 +32,7 @@ class InvalidYAMLError(BumpVersionError):
 
 
 class ConfiguredYAMLFile(FileTypeBase):
-    def __init__(self, filename: str, version_config: VersionConfig, file_type=FileTypes.YAML, yamlpath: str = None):
+    def __init__(self, filename: str, version_config: VersionConfig, file_type="yaml", yamlpath: str = None):
         super().__init__(filename, version_config, file_type, yamlpath, logger)
         self.yaml = Parsers.get_yaml_editor()
         self.yaml_logging_args = SimpleNamespace(quiet=True, verbose=False, debug=False)

@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Dict, Union
 
 from bumpsemver.exceptions import VersionNotFoundError
-from bumpsemver.files import FileTypes
 from bumpsemver.files.base import FileTypeBase
 from bumpsemver.version_part import Version, VersionConfig
 
@@ -13,10 +12,7 @@ logger = logging.getLogger(__name__)
 class ConfiguredPlainTextFile(FileTypeBase):
 
     def __init__(self, filename, version_config: VersionConfig):
-        self.filename = filename
-        self._version_config = version_config
-        self.file_type = FileTypes.GENERIC
-        super().__init__(filename, version_config, FileTypes.GENERIC, None, logger)
+        super().__init__(filename, version_config, "plaintext", None, logger)
 
     def should_contain_version(self, version: Version, context: dict) -> None:
         """

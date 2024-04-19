@@ -10,7 +10,6 @@ from bumpsemver.exceptions import (
     PathNotFoundError,
     SingleValueMismatchError,
 )
-from bumpsemver.files import FileTypes
 from bumpsemver.files.base import FileTypeBase
 from bumpsemver.files.tomlpath import TomlPath
 from bumpsemver.version_part import Version, VersionConfig
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConfiguredTOMLFile(FileTypeBase):
-    def __init__(self, filename: str, version_config: VersionConfig, file_type=FileTypes.TOML, tomlpath: str = None):
+    def __init__(self, filename: str, version_config: VersionConfig, file_type="toml", tomlpath: str = None):
         super().__init__(filename, version_config, file_type, tomlpath, logger)
 
     def should_contain_version(self, version: Version, context: dict) -> None:

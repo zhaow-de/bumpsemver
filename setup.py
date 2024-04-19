@@ -1,6 +1,6 @@
 # ruff: noqa
 import setuptools
 
-version='1.0.6' # noqa
+version='2.0.0' # noqa
 
 setuptools.setup()

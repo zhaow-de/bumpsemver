@@ -12,6 +12,7 @@ from typing import Dict, List, Tuple, Type
 from bumpsemver import __title__, __version__
 from bumpsemver.exceptions import (
     CannotParseVersionError,
+    FileTypeMismatchError,
     InvalidConfigSectionError,
     InvalidFileError,
     MixedNewLineError,
@@ -117,6 +118,7 @@ def main(original_args=None) -> None:
         sys.exit(3)
     except (
         CannotParseVersionError,
+        FileTypeMismatchError,
         InvalidConfigSectionError,
         InvalidFileError,
         MultiValuesMismatchError,
@@ -281,8 +283,14 @@ def _parse_sections(config: RawConfigParser, defaults, sections):
         type_info = file_types_config.get(file_type)
 
         _check_section_config(section_name, list(type_info.props.keys()), [*section_props])
+        if file_type == "file" or file_type == "plaintext":
+            _, ext = os.path.splitext(filename)
+            ext = ext.lstrip(".").lower()
+            if ext in ["json", "toml", "yaml", "yml"]:
+                raise FileTypeMismatchError(file_type, ext if ext != "yml" else "yaml", filename)
+
         if file_type == "file":
-            logger.warning("Using 'file' section type is deprecated, please use 'plaintext' instead.")
+            logger.warning("File type 'file' is deprecated, please use 'plaintext' instead.")
 
         for k, v in type_info.props.items():
             if k not in section_props:

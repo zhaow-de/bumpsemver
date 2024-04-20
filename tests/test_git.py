@@ -669,7 +669,7 @@ def test_log_commit_message_if_no_commit_tag_but_usable_vcs(tmpdir):
             "INFO",
             "[bumpsemver]\ncurrent_version = 0.3.3\ncommit = False\ntag = False\n[bumpsemver:file:please_touch_me.txt]",
         ),
-        ("bumpsemver.cli", "WARNING", "Using 'file' section type is deprecated, please use 'plaintext' instead."),
+        ("bumpsemver.cli", "WARNING", "File type 'file' is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",

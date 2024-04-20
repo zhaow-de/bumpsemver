@@ -309,7 +309,7 @@ def test_complex_info_logging(tmpdir):
     log_capture.check(
         ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
         ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.0\n\n[bumpsemver:file:fileE]"),
-        ("bumpsemver.cli", "WARNING", "Using 'file' section type is deprecated, please use 'plaintext' instead."),
+        ("bumpsemver.cli", "WARNING", "File type 'file' is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",

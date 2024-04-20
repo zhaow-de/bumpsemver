@@ -5,7 +5,6 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 
-from bumpsemver import exceptions
 from bumpsemver.cli import main
 from bumpsemver.exceptions import VersionNotFoundError
 from bumpsemver.files.text import ConfiguredPlainTextFile
@@ -150,7 +149,7 @@ def test_search_replace_to_avoid_updating_unconcerned_lines(tmpdir):
             "[bumpsemver]\ncurrent_version = 1.5.6\n\n[bumpsemver:file:requirements.txt]\n"
             "search = MyProject=={current_version}\nreplace = MyProject=={new_version}",
         ),
-        ("bumpsemver.cli", "WARNING", "Using 'file' section type is deprecated, please use 'plaintext' instead."),
+        ("bumpsemver.cli", "WARNING", "File type 'file' is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",

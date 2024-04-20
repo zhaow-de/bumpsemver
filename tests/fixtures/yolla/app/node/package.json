@@ -1,0 +1,14 @@
+{
+  "name": "bumpsemver-node",
+  "version": "1.0.3",
+  "description": "bumpsemver-node (positive)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "has-proto": "1.0.3"
+  }
+}

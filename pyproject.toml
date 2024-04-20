@@ -41,8 +41,8 @@ docstring-quotes = "double"
 "tests/*" = ["S101", "PLR0913", "PLR0915", "PGH003", "ANN001", "ANN202", "ANN201", "PLR0912", "TRY301", "PLW0603", "PLR2004", "ANN101", "S106", "TRY201", "ANN003", "ANN002", "S105", "TRY003"]
 
 [tool.ruff.lint.mccabe]
-# Unlike Flake8, default to a complexity level of 10.
-max-complexity = 10
+# Unlike Flake8, default to a complexity level of 15.
+max-complexity = 15
 
 [tool.ruff.lint.isort]
 order-by-type = true
@@ -80,7 +80,7 @@ python = ">= 3.10,< 4"
 "ruamel.yaml" = "*"  # we prefer pyyaml, but ruamel.yaml is being used by yamlpath. no reason to have both.
 jsonpath-ng = "*"
 tomlkit = "*"
-yamlpath = "*"
+yamlpath = ">=3.4.1"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "*"

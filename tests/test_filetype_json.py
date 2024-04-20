@@ -242,9 +242,9 @@ def test_json_file_info_logging(tmpdir):
         main(["patch", "--verbose"])
 
     log_capture.check(
-        ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "Reading config file .bumpsemver.cfg:"),
         (
-            "bumpsemver.cli",
+            "bumpsemver.config",
             "INFO",
             "[bumpsemver]\ncurrent_version = 0.4.0\n\n[bumpsemver:json:fileJ]\njsonpath = version",
         ),
@@ -263,6 +263,7 @@ def test_json_file_info_logging(tmpdir):
         ),
         ("bumpsemver.version_part", "INFO", "Parsed the following values: major=0, minor=4, patch=1"),
         ("bumpsemver.cli", "INFO", "New version will be '0.4.1'"),
+        ("bumpsemver.git", "WARNING", "'git ls-files' failed. Listing files without respecting '.gitignore'"),
         ("bumpsemver.cli", "INFO", "Asserting files fileJ contain the version string..."),
         ("bumpsemver.files.json", "INFO", "Changing json file fileJ:"),
         (
@@ -270,9 +271,9 @@ def test_json_file_info_logging(tmpdir):
             "INFO",
             '--- a/fileJ\n+++ b/fileJ\n@@ -1,3 +1,3 @@\n {\n-  "version": "0.4.0"\n+  "version": "0.4.1"\n }',
         ),
-        ("bumpsemver.cli", "INFO", "Writing to config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "Writing to config file .bumpsemver.cfg:"),
         (
-            "bumpsemver.cli",
+            "bumpsemver.config",
             "INFO",
             "[bumpsemver]\ncurrent_version = 0.4.1\n\n[bumpsemver:json:fileJ]\njsonpath = version\n\n",
         ),

@@ -38,7 +38,6 @@ awswrangler = "^3.5.2"
 xgboost = "~1.7.0"
 numpy = "^1.22.2"
 pandas = "^2.0"
-rcplus-alloy-common = "^5.0.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1"

@@ -102,3 +102,14 @@ class FileTypeMismatchError(BumpVersionError):
         )
         super().__init__(message)
         self.message = message
+
+
+class DiscoveryError(BumpVersionError):
+    def __init__(self, issues: List[str]):
+        issues_str = "\n  - ".join(issues)
+        message = (
+            f"Discovered unmanaged files. "
+            f"Please add them to the config file for versioning or to ignore:\n  - {issues_str}"
+        )
+        super().__init__(message)
+        self.message = message

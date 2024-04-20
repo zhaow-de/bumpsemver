@@ -142,14 +142,14 @@ def test_search_replace_to_avoid_updating_unconcerned_lines(tmpdir):
         main(["minor", "--verbose"])
 
     log_capture.check(
-        ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "Reading config file .bumpsemver.cfg:"),
         (
-            "bumpsemver.cli",
+            "bumpsemver.config",
             "INFO",
             "[bumpsemver]\ncurrent_version = 1.5.6\n\n[bumpsemver:file:requirements.txt]\n"
             "search = MyProject=={current_version}\nreplace = MyProject=={new_version}",
         ),
-        ("bumpsemver.cli", "WARNING", "File type 'file' is deprecated, please use 'plaintext' instead."),
+        ("bumpsemver.config", "WARNING", "File type 'file' is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -165,6 +165,7 @@ def test_search_replace_to_avoid_updating_unconcerned_lines(tmpdir):
         ),
         ("bumpsemver.version_part", "INFO", "Parsed the following values: major=1, minor=6, patch=0"),
         ("bumpsemver.cli", "INFO", "New version will be '1.6.0'"),
+        ("bumpsemver.git", "WARNING", "'git ls-files' failed. Listing files without respecting '.gitignore'"),
         ("bumpsemver.cli", "INFO", "Asserting files requirements.txt contain the version string..."),
         (
             "bumpsemver.files.text",
@@ -180,9 +181,9 @@ def test_search_replace_to_avoid_updating_unconcerned_lines(tmpdir):
                 " Django>=1.5.6,<1.6\n-MyProject==1.5.6\n+MyProject==1.6.0"
             ),
         ),
-        ("bumpsemver.cli", "INFO", "Writing to config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "Writing to config file .bumpsemver.cfg:"),
         (
-            "bumpsemver.cli",
+            "bumpsemver.config",
             "INFO",
             "[bumpsemver]\ncurrent_version = 1.6.0\n\n[bumpsemver:file:requirements.txt]\n"
             "search = MyProject=={current_version}\nreplace = MyProject=={new_version}\n\n",
@@ -347,7 +348,11 @@ def test_deprecation_warning_files_in_global_configuration(tmpdir):
         main(["patch"])
 
     log_capture.check_present(
-        ("bumpsemver.cli", "WARNING", "'files =' configuration will be deprecated, please use [bumpsemver:file:...]"),
+        (
+            "bumpsemver.config",
+            "WARNING",
+            "'files =' configuration will be deprecated, please use [bumpsemver:file:...]",
+        ),
         order_matters=False,
     )
 

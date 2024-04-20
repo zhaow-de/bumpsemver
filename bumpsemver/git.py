@@ -4,7 +4,7 @@ import os
 import subprocess
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from bumpsemver.exceptions import WorkingDirectoryIsDirtyError
 
@@ -100,7 +100,7 @@ class Git:
         Create a tag of the new_version in Git.
 
         If only name is given, bumpversion uses a lightweight tag.
-        Otherwise, it utilizes an annotated tag.
+        Otherwise, it uses an annotated tag.
         """
         command = ["git", "tag", name]
         if sign:
@@ -108,3 +108,16 @@ class Git:
         if message:
             command += ["--message", message]
         subprocess.check_output(command)
+
+    @classmethod
+    def list_files(cls) -> List[str]:
+        try:
+            return [line.decode().strip() for line in subprocess.check_output(["git", "ls-files"]).splitlines()]
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.warning("'git ls-files' failed. Listing files without respecting '.gitignore'")
+            path = os.getcwd()
+            return [
+                os.path.relpath(str(os.path.join(dir_path, f)))
+                for (dir_path, dirs, filenames) in os.walk(path)
+                for f in filenames
+            ]

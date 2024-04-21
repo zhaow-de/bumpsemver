@@ -583,9 +583,9 @@ def test_subjunctive_dry_run_logging(tmpdir):
         main(["patch", "--verbose", "--dry-run"])
 
     log_capture.check(
-        ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "Reading config file .bumpsemver.cfg:"),
         (
-            "bumpsemver.cli",
+            "bumpsemver.config",
             "INFO",
             (
                 "[bumpsemver]\ncurrent_version = 0.8.0\ncommit = True\n"
@@ -616,9 +616,9 @@ def test_subjunctive_dry_run_logging(tmpdir):
             "INFO",
             "--- a/dont_touch_me.txt\n+++ b/dont_touch_me.txt\n@@ -1 +1 @@\n-0.8.0\n+0.8.1",
         ),
-        ("bumpsemver.cli", "INFO", "Would write to config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "Would write to config file .bumpsemver.cfg:"),
         (
-            "bumpsemver.cli",
+            "bumpsemver.config",
             "INFO",
             (
                 "[bumpsemver]\ncurrent_version = 0.8.1\ncommit = True\n"
@@ -663,13 +663,13 @@ def test_log_commit_message_if_no_commit_tag_but_usable_vcs(tmpdir):
         main(["patch", "--verbose"])
 
     log_capture.check(
-        ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "Reading config file .bumpsemver.cfg:"),
         (
-            "bumpsemver.cli",
+            "bumpsemver.config",
             "INFO",
             "[bumpsemver]\ncurrent_version = 0.3.3\ncommit = False\ntag = False\n[bumpsemver:file:please_touch_me.txt]",
         ),
-        ("bumpsemver.cli", "WARNING", "Using 'file' section type is deprecated, please use 'plaintext' instead."),
+        ("bumpsemver.config", "WARNING", "File type 'file' is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -693,9 +693,9 @@ def test_log_commit_message_if_no_commit_tag_but_usable_vcs(tmpdir):
             "INFO",
             "--- a/please_touch_me.txt\n+++ b/please_touch_me.txt\n@@ -1 +1 @@\n-0.3.3\n+0.3.4",
         ),
-        ("bumpsemver.cli", "INFO", "Writing to config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "Writing to config file .bumpsemver.cfg:"),
         (
-            "bumpsemver.cli",
+            "bumpsemver.config",
             "INFO",
             (
                 "[bumpsemver]\ncurrent_version = 0.3.4\ncommit = False\n"

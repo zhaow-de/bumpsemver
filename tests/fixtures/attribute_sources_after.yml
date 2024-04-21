@@ -22,8 +22,8 @@ sources:
               type: timestamp
               description: "Hour in which event has been collected by tracking endpoint"
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           depends_on: ["predictions_age_tmp"]
           version: 2.1.0
 
@@ -43,8 +43,8 @@ sources:
               type: timestamp
               description: "Hour in which event has been collected by tracking endpoint"
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           depends_on: ["profiles_taxonomy", "predictions_age_columns"]
           version: 2.1.0
 
@@ -61,8 +61,8 @@ sources:
             type: bigint
             description: ""
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           version: 2.1.0
       - name: predictions_gender
         description: Gender predictions
@@ -80,8 +80,8 @@ sources:
               type: timestamp
               description: "Hour in which event has been collected by tracking endpoint"
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           depends_on: ["predictions_gender_tmp"]
           version: 2.1.0
 
@@ -101,8 +101,8 @@ sources:
               type: timestamp
               description: "Hour in which event has been collected by tracking endpoint"
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           depends_on: ["profiles_taxonomy", "predictions_gender_columns"]
           version: 2.1.0
 
@@ -119,8 +119,8 @@ sources:
             type: bigint
             description: ""
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           version: 2.1.0
 
       - name: predictions_income
@@ -139,8 +139,8 @@ sources:
               type: timestamp
               description: "Hour in which event has been collected by tracking endpoint"
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           depends_on: ["predictions_income_tmp"]
           version: 2.1.0
 
@@ -160,8 +160,8 @@ sources:
               type: timestamp
               description: "Hour in which event has been collected by tracking endpoint"
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           depends_on: ["profiles_taxonomy", "predictions_income_columns"]
           version: 2.1.0
 
@@ -178,6 +178,6 @@ sources:
             type: bigint
             description: ""
         meta:
-          repo: "rcplus-alloy-attribute-predictor"
-          source: "rcplus-alloy-attribute-predictor"
+          repo: "yolla-attribute-predictor"
+          source: "yolla-attribute-predictor"
           version: 2.1.0

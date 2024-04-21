@@ -7,7 +7,7 @@
 [![GitHub Actions](https://github.com/zhaow-de/bumpsemver/workflows/CI/badge.svg)](https://github.com/zhaow-de/bumpsemver/actions)
 
 
-Current version: **2.0.0**
+Current version: **v2.0.0**
 
 ## Table of contents
 
@@ -75,9 +75,6 @@ and/or overwriting unsaved changes. Use this option to override this check.
 
 `--verbose`
 Print useful information about the action details.
-
-`--alloy-checks`
-Perform some extra checks for a private project. Generally irrelevant to the common daily usages.
 
 `-h, --help`
 Print help and exit.
@@ -207,13 +204,13 @@ It specifies the action to be done for a specific file.
 We do have the use case that one file has multiple places to change, a popular example is `package-lock.json`:
 ```json
 {
-  "name": "rcplus-app-cli",
+  "name": "app-cli",
   "version": "1.1.0",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
-      "name": "rcplus-app-cli",
+      "name": "app-cli",
       "version": "1.1.0",
       "license": "SEE LICENSE IN LICENSE"
     }

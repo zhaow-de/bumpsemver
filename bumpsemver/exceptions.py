@@ -28,8 +28,8 @@ class CannotParseVersionError(BumpVersionError):
 
 
 class MixedNewLineError(BumpVersionError):
-    def __init__(self, path: str, file_new_lines: Tuple[str, ...]):
-        message = f"File {path} has mixed newline characters: {file_new_lines}"
+    def __init__(self, filename: str, file_new_lines: Tuple[str, ...]):
+        message = f"File {filename} has mixed newline characters: {file_new_lines}"
         super().__init__(message)
         self.message = message
 
@@ -40,22 +40,22 @@ class MixedNewLineError(BumpVersionError):
 # we cannot distinguish the mismatch cases like json, yaml, toml
 # with InvalidFileError, PathNotFoundError, SingleValueMismatchError, and MultiValuesMismatchError
 class VersionNotFoundError(BumpVersionError):
-    def __init__(self, search_expression: str, path: str):
-        message = f"Did not find '{search_expression}' in plaintext file: '{path}'"
+    def __init__(self, search_expression: str, filename: str):
+        message = f"Did not find '{search_expression}' in plaintext file: '{filename}'"
         super().__init__(message)
         self.message = message
 
 
 class InvalidFileError(BumpVersionError):
-    def __init__(self, path: str, file_type: str):
-        message = f"File {path} cannot be parsed as a valid {file_type} file"
+    def __init__(self, filename: str, file_type: str):
+        message = f"File {filename} cannot be parsed as a valid {file_type} file"
         super().__init__(message)
         self.message = message
 
 
 class PathNotFoundError(BumpVersionError):
-    def __init__(self, selector: str, file_type: str, path: str):
-        message = f"Selector '{selector}' does not lead to a valid property in {file_type} file {path}"
+    def __init__(self, selector: str, file_type: str, filename: str):
+        message = f"Selector '{selector}' does not lead to a valid property in {file_type} file {filename}"
         super().__init__(message)
         self.message = message
 
@@ -65,13 +65,13 @@ class SingleValueMismatchError(BumpVersionError):
         self,
         selector: str,
         file_type: str,
-        path: str,
+        filename: str,
         actual_value: Union[str, int, float, bool],
         expected_value: Union[str, int, float, bool],
     ):
         message = (
             f"Selector '{selector}' finds value '{actual_value}' "
-            f"mismatches with the expectation '{expected_value}' in {file_type} file {path}"
+            f"mismatches with the expectation '{expected_value}' in {file_type} file {filename}"
         )
         super().__init__(message)
         self.message = message
@@ -82,13 +82,34 @@ class MultiValuesMismatchError(BumpVersionError):
         self,
         selector: str,
         file_type: str,
-        path: str,
+        filename: str,
         actual_value: List[Union[str, int, float, bool]],
         expected_value: Union[str, int, float, bool],
     ):
         message = (
-            f"Selector '{selector}' finds list of values {actual_value} "
-            f"with one more more elements mismatch with the expectation '{expected_value}' in {file_type} file {path}"
+            f"Selector '{selector}' finds list of values {actual_value} with one more more elements "
+            f"mismatch with the expectation '{expected_value}' in {file_type} file {filename}"
+        )
+        super().__init__(message)
+        self.message = message
+
+
+class FileTypeMismatchError(BumpVersionError):
+    def __init__(self, file_type: str, file_type_expected: str, filename: str):
+        message = (
+            f"Wrong file type '{file_type}' specified for file {filename}, "
+            f"please use '{file_type_expected}' instead"
+        )
+        super().__init__(message)
+        self.message = message
+
+
+class DiscoveryError(BumpVersionError):
+    def __init__(self, issues: List[str]):
+        issues_str = "\n  - ".join(issues)
+        message = (
+            f"Discovered unmanaged files. "
+            f"Please add them to the config file for versioning or to ignore:\n  - {issues_str}"
         )
         super().__init__(message)
         self.message = message

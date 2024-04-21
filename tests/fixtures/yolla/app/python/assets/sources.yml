@@ -1,0 +1,30 @@
+---
+version: 2
+
+sources:
+  - name: 'segments'
+    description: 'Segments'
+    schema: '{{ env_var("TENANT", "foobar") }}'
+    tables:
+      - name: bumpsemver_python_dbt_2
+        description: Transactions table copy
+        columns:
+          - name: id
+            type: 'string'
+            description: 'segment id'
+        meta:
+          repo: "bumpsemver"
+          source: "tests-python-dbt"
+          version: 1.0.3
+
+      - name: bumpsemver_python_dbt_3
+        description: Table for preparing unload
+        columns:
+          - name: uid
+            type: 'struct<source:string,id:string>'
+            description: 'Hashed fp_id'
+        meta:
+          repo: "bumpsemver"
+          source: "tests-python-dbt"
+          depends_on: ["bumpsemver_python_dbt_2"]
+          version: 1.0.3

@@ -1,0 +1,16 @@
+---
+  - name: 'deploy audience segments pipeline'
+    hosts: 'localhost'
+    connection: 'local'
+    gather_facts: false
+    vars:
+      aws_region: 'eu-central-1'
+      project_id: 'bumpsemver'
+      project_version: 1.0.3
+      software_component: 'utilities'
+    roles:
+      - 'init_workspace'
+
+      - 'do-something'
+
+      - 'del_workspace'

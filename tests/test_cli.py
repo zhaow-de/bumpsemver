@@ -77,6 +77,7 @@ options:
   --verbose             Print verbose logging to stderr (default: 0)
   --allow-dirty         Don't abort if working directory is dirty (default:
                         False)
+  --version             Print version and exit
   --search SEARCH       Template for complete string to search (default:
                         {current_version})
   --replace REPLACE     Template for complete string to replace (default:
@@ -218,7 +219,7 @@ def test_log_no_config_file_info_message(tmpdir):
         main(["--verbose", "--verbose", "--current-version", "1.0.0", "patch", "a_file.txt"])
 
     log_capture.check_present(
-        ("bumpsemver.cli", "INFO", "Could not read config file at .bumpsemver.cfg"),
+        ("bumpsemver.config", "INFO", "Could not read config file at .bumpsemver.cfg"),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -238,8 +239,8 @@ def test_log_no_config_file_info_message(tmpdir):
         ("bumpsemver.files.text", "INFO", "Found '1.0.0' in a_file.txt at line 0: 1.0.0"),
         ("bumpsemver.files.text", "INFO", "Changing plaintext file a_file.txt:"),
         ("bumpsemver.files.text", "INFO", "--- a/a_file.txt\n+++ b/a_file.txt\n@@ -1 +1 @@\n-1.0.0\n+1.0.1"),
-        ("bumpsemver.cli", "INFO", "Would write to config file .bumpsemver.cfg:"),
-        ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 1.0.1\n\n"),
+        ("bumpsemver.config", "INFO", "Would write to config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "[bumpsemver]\ncurrent_version = 1.0.1\n\n"),
         order_matters=True,
     )
     assert exc.value.code == 0
@@ -252,7 +253,7 @@ def test_log_parse_doesnt_parse_current_version(tmpdir):
         main(["--verbose", "--current-version", "12", "--new-version", "13", "patch"])
 
     log_capture.check_present(
-        ("bumpsemver.cli", "INFO", "Could not read config file at .bumpsemver.cfg"),
+        ("bumpsemver.config", "INFO", "Could not read config file at .bumpsemver.cfg"),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -281,8 +282,8 @@ def test_log_parse_doesnt_parse_current_version(tmpdir):
         ),
         ("bumpsemver.cli", "INFO", "New version will be '13'"),
         ("bumpsemver.cli", "INFO", "Asserting files  contain the version string..."),
-        ("bumpsemver.cli", "INFO", "Would write to config file .bumpsemver.cfg:"),
-        ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 13\n\n"),
+        ("bumpsemver.config", "INFO", "Would write to config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "[bumpsemver]\ncurrent_version = 13\n\n"),
     )
     assert exc.value.code == 0
 
@@ -306,9 +307,9 @@ def test_complex_info_logging(tmpdir):
         main(["patch", "--verbose"])
 
     log_capture.check(
-        ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
-        ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.0\n\n[bumpsemver:file:fileE]"),
-        ("bumpsemver.cli", "WARNING", "Using 'file' section type is deprecated, please use 'plaintext' instead."),
+        ("bumpsemver.config", "INFO", "Reading config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "[bumpsemver]\ncurrent_version = 0.4.0\n\n[bumpsemver:file:fileE]"),
+        ("bumpsemver.config", "WARNING", "File type 'file' is deprecated, please use 'plaintext' instead."),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -324,12 +325,13 @@ def test_complex_info_logging(tmpdir):
         ),
         ("bumpsemver.version_part", "INFO", "Parsed the following values: major=0, minor=4, patch=1"),
         ("bumpsemver.cli", "INFO", "New version will be '0.4.1'"),
+        ("bumpsemver.git", "WARNING", "'git ls-files' failed. Listing files without respecting '.gitignore'"),
         ("bumpsemver.cli", "INFO", "Asserting files fileE contain the version string..."),
         ("bumpsemver.files.text", "INFO", "Found '0.4.0' in fileE at line 0: 0.4.0"),
         ("bumpsemver.files.text", "INFO", "Changing plaintext file fileE:"),
         ("bumpsemver.files.text", "INFO", "--- a/fileE\n+++ b/fileE\n@@ -1 +1 @@\n-0.4.0\n+0.4.1"),
-        ("bumpsemver.cli", "INFO", "Writing to config file .bumpsemver.cfg:"),
-        ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.1\n\n[bumpsemver:file:fileE]\n\n"),
+        ("bumpsemver.config", "INFO", "Writing to config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "[bumpsemver]\ncurrent_version = 0.4.1\n\n[bumpsemver:file:fileE]\n\n"),
     )
     assert exc.value.code == 0
 
@@ -352,8 +354,8 @@ def test_complex_info_logging_plaintext(tmpdir):
         main(["patch", "--verbose"])
 
     log_capture.check(
-        ("bumpsemver.cli", "INFO", "Reading config file .bumpsemver.cfg:"),
-        ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.0\n[bumpsemver:plaintext:fileM]"),
+        ("bumpsemver.config", "INFO", "Reading config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "[bumpsemver]\ncurrent_version = 0.4.0\n[bumpsemver:plaintext:fileM]"),
         (
             "bumpsemver.version_part",
             "INFO",
@@ -369,12 +371,13 @@ def test_complex_info_logging_plaintext(tmpdir):
         ),
         ("bumpsemver.version_part", "INFO", "Parsed the following values: major=0, minor=4, patch=1"),
         ("bumpsemver.cli", "INFO", "New version will be '0.4.1'"),
+        ("bumpsemver.git", "WARNING", "'git ls-files' failed. Listing files without respecting '.gitignore'"),
         ("bumpsemver.cli", "INFO", "Asserting files fileM contain the version string..."),
         ("bumpsemver.files.text", "INFO", "Found '0.4.0' in fileM at line 0: 0.4.0"),
         ("bumpsemver.files.text", "INFO", "Changing plaintext file fileM:"),
         ("bumpsemver.files.text", "INFO", "--- a/fileM\n+++ b/fileM\n@@ -1 +1 @@\n-0.4.0\n+0.4.1"),
-        ("bumpsemver.cli", "INFO", "Writing to config file .bumpsemver.cfg:"),
-        ("bumpsemver.cli", "INFO", "[bumpsemver]\ncurrent_version = 0.4.1\n\n[bumpsemver:plaintext:fileM]\n\n"),
+        ("bumpsemver.config", "INFO", "Writing to config file .bumpsemver.cfg:"),
+        ("bumpsemver.config", "INFO", "[bumpsemver]\ncurrent_version = 0.4.1\n\n[bumpsemver:plaintext:fileM]\n\n"),
     )
     assert exc.value.code == 0
 

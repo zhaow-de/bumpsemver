@@ -1,0 +1,12 @@
+name: 'dbt_dummy_project'
+version: '1.0.3'
+config-version: 2
+
+profile: athena
+
+macro-paths: ["macros", "dbt_packages/dbt_macros/macros"]
+target-path: "target"  # directory which will store compiled SQL files
+clean-targets:         # directories to be removed by `dbt clean`
+  - "target"
+  - "dbt_packages"
+  - "logs"

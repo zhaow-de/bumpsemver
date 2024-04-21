@@ -1,0 +1,44 @@
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.pylint]
+max-args = 11
+
+[tool.ruff.flake8-quotes]
+docstring-quotes = "double"
+
+[tool.poetry]
+version = "1.0.3"
+name = "bumpsemver-python"
+description = "Positive test case"
+
+[tool.a.fake-one]
+version = "1.0.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = ">=3.10, <3.11"
+
+python-json-logger = "^2.0.2"
+awswrangler = "^3.3.0"
+
+[tool.poetry.group.types.dependencies]
+types-boto3 = "^1.0.2"
+types-requests = "^2.31.0.2"
+
+[tool.mypy]
+
+[[tool.mypy.overrides]]
+module = [
+    "google.*",
+    "googleads",
+    "sklearn.*",
+    "moto",
+]
+ignore_missing_imports = true

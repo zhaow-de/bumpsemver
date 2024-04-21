@@ -12,6 +12,7 @@ from bumpsemver.exceptions import (
     CannotParseVersionError,
     DiscoveryError,
     FileTypeMismatchError,
+    InvalidArgumentsError,
     InvalidConfigSectionError,
     InvalidFileError,
     MixedNewLineError,
@@ -21,7 +22,6 @@ from bumpsemver.exceptions import (
     VersionNotFoundError,
     WorkingDirectoryIsDirtyError,
 )
-from bumpsemver.files.text import ConfiguredPlainTextFile
 from bumpsemver.git import Git
 from bumpsemver.utils import key_value_string
 from bumpsemver.version_part import VersionConfig
@@ -37,8 +37,6 @@ OPTIONAL_ARGUMENTS_THAT_TAKE_VALUES = [
     "--current-version",
     "--message",
     "--new-version",
-    "--search",
-    "--replace",
     "--tag-name",
     "--tag-message",
 ]
@@ -60,7 +58,7 @@ def main(original_args=None) -> None:
             config_file, explicit_config, defaults
         )
         known_args, parser2, remaining_argv = _parse_arguments_phase_2(args, defaults, root_parser)
-        version_config = VersionConfig(search=known_args.search, replace=known_args.replace)
+        version_config = VersionConfig()
         current_version = version_config.parse(known_args.current_version)
         context = {**time_context, **vcs_info}
         #
@@ -68,29 +66,37 @@ def main(original_args=None) -> None:
         new_version = _assemble_new_version(
             current_version, defaults, known_args.current_version, positionals, version_config
         )
-        args, file_names = _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2)
-        new_version = _parse_new_version(args, new_version, version_config)
+        args_parsed = _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2)
+        if (
+            not config_file_exists
+            and "-h" not in args
+            and "--help" not in args
+            and "-v" not in args
+            and "--version" not in args
+        ):
+            raise InvalidArgumentsError(
+                "No valid config file is specified and the default .bumpsemver.cfg is not found"
+            )
+
+        new_version = _parse_new_version(args_parsed, new_version, version_config)
 
         # replace the version in target files
         vcs = _determine_vcs_dirty(defaults)
-        files.extend(
-            ConfiguredPlainTextFile(file_name, version_config) for file_name in (file_names or positionals[1:])
-        )
 
         # discover unmanaged files
         discover_unmanaged_files([file.filename for file in files], ignored_for_discovery)
 
-        _replace_version_in_files(files, current_version, new_version, args.dry_run, context)
-        _update_config_file(config, config_file, config_newlines, config_file_exists, args.new_version, args.dry_run)
+        _replace_version_in_files(files, current_version, new_version, args_parsed.dry_run, context)
+        _update_config_file(config, config_file, config_newlines, args_parsed.new_version, args_parsed.dry_run)
 
         # commit and tag
         if vcs:
-            context = _commit_to_vcs(files, config_file, config_file_exists, vcs, args, current_version, new_version)
-            _tag_in_vcs(vcs, context, args)
+            context = _commit_to_vcs(files, config_file, vcs, args_parsed, current_version, new_version)
+            _tag_in_vcs(vcs, context, args_parsed)
 
         sys.exit(0)
-    except argparse.ArgumentTypeError as exc:
-        logger.error(f"{''.join(exc.args)}")
+    except (argparse.ArgumentTypeError, InvalidArgumentsError) as exc:
+        logger.error(f"{exc.message if hasattr(exc, 'message') else ''.join(exc.args)}")
         sys.exit(1)
     except FileNotFoundError as exc:
         logger.error(f"FileNotFound. {exc!s}")
@@ -125,10 +131,8 @@ def main(original_args=None) -> None:
 
 def split_args_in_optional_and_positional(args):
     # manually parsing positional arguments because with argparse we cannot mix positional and optional arguments
-
     positions = []
     for i, arg in enumerate(args):
-
         previous = None
 
         if i > 0:
@@ -145,11 +149,6 @@ def split_args_in_optional_and_positional(args):
 
 def _parse_arguments_phase_1(original_args):
     positionals, args = split_args_in_optional_and_positional(sys.argv[1:] if original_args is None else original_args)
-    if len(positionals[1:]) > 2:
-        logger.warning(
-            "Giving multiple files on the command line will be deprecated, "
-            "please use [bumpsemver:plaintext:...] in a config file."
-        )
     root_parser = argparse.ArgumentParser(add_help=False)
     root_parser.add_argument(
         "--config-file",
@@ -162,7 +161,7 @@ def _parse_arguments_phase_1(original_args):
         "--verbose",
         action="count",
         default=0,
-        help="Print verbose logging to stderr",
+        help="Print verbose logging, use it twice for debug level",
         required=False,
     )
     root_parser.add_argument(
@@ -173,12 +172,14 @@ def _parse_arguments_phase_1(original_args):
         required=False,
     )
     root_parser.add_argument(
+        "-v",
         "--version",
         action="version",
         version=f"%(prog)s {__version__}",
         help="Print version and exit",
     )
     known_args, _ = root_parser.parse_known_args(args)
+
     return args, known_args, root_parser, positionals
 
 
@@ -215,18 +216,6 @@ def _parse_arguments_phase_2(args, defaults, root_parser):
         metavar="VERSION",
         help="Version that needs to be updated",
         required=False,
-    )
-    parser2.add_argument(
-        "--search",
-        metavar="SEARCH",
-        help="Template for complete string to search",
-        default=defaults.get("search", "{current_version}"),
-    )
-    parser2.add_argument(
-        "--replace",
-        metavar="REPLACE",
-        help="Template for complete string to replace",
-        default=defaults.get("replace", "{new_version}"),
     )
     known_args, remaining_argv = parser2.parse_known_args(args)
 
@@ -325,7 +314,7 @@ def _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2):
         "--tag-name",
         metavar="TAG_NAME",
         help="Tag name (only works with --tag)",
-        default=defaults.get("tag_name", "r{new_version}"),
+        default=defaults.get("tag_name", "v{new_version}"),
     )
     parser3.add_argument(
         "--tag-message",
@@ -340,18 +329,14 @@ def _parse_arguments_phase_3(remaining_argv, positionals, defaults, parser2):
         help="Commit message",
         default=defaults.get("message", "build(repo): bumped version {current_version} → {new_version}"),
     )
-    file_names = []
-    if "files" in defaults:
-        assert defaults["files"] is not None
-        file_names = defaults["files"].split(" ")
-    parser3.add_argument("part", help="Part of the version to be bumped.")
-    parser3.add_argument("files", metavar="file", nargs="*", help="Files to change", default=file_names)
+    parser3.add_argument("part", help="Part of the version to be bumped", choices=["major", "minor", "patch"])
+
     args = parser3.parse_args(remaining_argv + positionals)
 
     if args.dry_run:
         logger.info("Dry run active, won't touch any files.")
 
-    return args, file_names
+    return args
 
 
 def _parse_new_version(args, new_version, version_config):
@@ -387,10 +372,9 @@ def _replace_version_in_files(files, current_version, new_version, dry_run, cont
         file_item.replace(current_version, new_version, context, dry_run)
 
 
-def _commit_to_vcs(files, config_file, config_file_exists, vcs, args, current_version, new_version):
+def _commit_to_vcs(files, config_file, vcs, args, current_version, new_version):
     commit_files = [f.filename for f in files]
-    if config_file_exists:
-        commit_files.append(config_file)
+    commit_files.append(config_file)
     assert vcs.is_usable(), f"Did find '{vcs.__name__}' unusable, unable to commit."
     do_commit = args.commit and not args.dry_run
     logger.info(f"{'Would prepare' if not do_commit else 'Preparing'} {vcs.__name__} commit")

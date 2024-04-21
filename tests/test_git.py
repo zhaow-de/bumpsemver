@@ -36,11 +36,18 @@ def test_dirty_work_dir(tmpdir):
     tmpdir.chdir()
     check_call(["git", "init"])
     tmpdir.join("dirty").write("i'm dirty")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver:plaintext:file7]
+            """
+        ).strip()
+    )
 
     check_call(["git", "add", "dirty"])
 
     with LogCapture() as log_capture, pytest.raises(SystemExit) as exc:
-        main(["patch", "--current-version", "1", "--new-version", "2", "file7"])
+        main(["patch", "--current-version", "1", "--new-version", "2"])
 
     log_capture.check_present(
         (
@@ -60,11 +67,18 @@ def test_force_dirty_work_dir(tmpdir):
     tmpdir.chdir()
     check_call(["git", "init"])
     tmpdir.join("dirty2").write("i'm dirty! 1.1.1")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver:plaintext:dirty2]
+            """
+        ).strip()
+    )
 
     check_call(["git", "add", "dirty2"])
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "--allow-dirty", "--current-version", "1.1.1", "dirty2"])
+        main(["patch", "--allow-dirty", "--current-version", "1.1.1"])
 
     assert "i'm dirty! 1.1.2" == tmpdir.join("dirty2").read()
     assert exc.value.code == 0
@@ -76,9 +90,16 @@ def test_commit_and_tag(tmpdir):
     tmpdir.join("VERSION").write("47.1.1")
     check_call(["git", "add", "VERSION"])
     check_call(["git", "commit", "-m", "initial commit"])
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver:plaintext:VERSION]
+            """
+        ).strip()
+    )
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "--current-version", "47.1.1", "--commit", "VERSION"])
+        main(["patch", "--current-version", "47.1.1", "--commit"])
 
     assert "47.1.2" == tmpdir.join("VERSION").read()
 
@@ -91,17 +112,17 @@ def test_commit_and_tag(tmpdir):
 
     tag_out = check_output(["git", "tag"])
 
-    assert b"r47.1.2" not in tag_out
+    assert b"v47.1.2" not in tag_out
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "--current-version", "47.1.2", "--commit", "--tag", "VERSION"])
+        main(["patch", "--current-version", "47.1.2", "--commit", "--tag"])
 
     assert "47.1.3" == tmpdir.join("VERSION").read()
 
     check_output(["git", "log", "-p"])
     tag_out = check_output(["git", "tag"])
 
-    assert b"r47.1.3" in tag_out
+    assert b"v47.1.3" in tag_out
     assert exc.value.code == 0
 
 
@@ -114,6 +135,7 @@ def test_commit_and_tag_with_configfile(tmpdir):
             [bumpsemver]
             commit = True
             tag = True
+            [bumpsemver:plaintext:VERSION]
             """
         ).strip()
     )
@@ -124,7 +146,7 @@ def test_commit_and_tag_with_configfile(tmpdir):
     check_call(["git", "commit", "-m", "initial commit"])
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "--current-version", "48.1.1", "--no-tag", "VERSION"])
+        main(["patch", "--current-version", "48.1.1", "--no-tag"])
 
     assert "48.1.2" == tmpdir.join("VERSION").read()
 
@@ -136,11 +158,11 @@ def test_commit_and_tag_with_configfile(tmpdir):
 
     tag_out = check_output(["git", "tag"])
 
-    assert b"r48.1.2" not in tag_out
+    assert b"v48.1.2" not in tag_out
     assert exc.value.code == 0
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "--current-version", "48.1.2", "VERSION"])
+        main(["patch", "--current-version", "48.1.2"])
 
     assert "48.1.3" == tmpdir.join("VERSION").read()
 
@@ -148,7 +170,7 @@ def test_commit_and_tag_with_configfile(tmpdir):
 
     tag_out = check_output(["git", "tag"])
 
-    assert b"r48.1.3" in tag_out
+    assert b"v48.1.3" in tag_out
     assert exc.value.code == 0
 
 
@@ -164,7 +186,7 @@ def test_commit_and_not_tag_with_configfile(tmpdir, config):
     check_call(["git", "commit", "-m", "initial commit"])
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "--current-version", "48.10.1", "VERSION"])
+        main(["patch", "--current-version", "48.10.1"])
 
     assert "48.10.2" == tmpdir.join("VERSION").read()
 
@@ -190,6 +212,7 @@ def test_commit_explicitly_false(tmpdir):
             current_version = 10.0.0
             commit = False
             tag = False
+            [bumpsemver:plaintext:tracked_file]
             """
         ).strip()
     )
@@ -200,7 +223,7 @@ def test_commit_explicitly_false(tmpdir):
     check_call(["git", "commit", "-m", "initial commit"])
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "tracked_file"])
+        main(["patch"])
 
     assert "10.0.1" == tmpdir.join("tracked_file").read()
 
@@ -222,6 +245,7 @@ def test_commit_configfile_true_cli_false_override(tmpdir):
             [bumpsemver]
             current_version = 27.0.0
             commit = True
+            [bumpsemver:plaintext:dont_commit_file]
             """
         ).strip()
     )
@@ -232,7 +256,7 @@ def test_commit_configfile_true_cli_false_override(tmpdir):
     check_call(["git", "commit", "-m", "initial commit"])
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "--no-commit", "dont_commit_file"])
+        main(["patch", "--no-commit"])
 
     assert "27.0.1" == tmpdir.join("dont_commit_file").read()
 
@@ -248,6 +272,17 @@ def test_commit_configfile_true_cli_false_override(tmpdir):
 def test_current_version_from_tag(tmpdir):
     # prepare
     tmpdir.join("update_from_tag").write("26.6.0")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver]
+            current_version = 26.6.0
+            commit = True
+            [bumpsemver:plaintext:update_from_tag]
+            """
+        ).strip()
+    )
+
     tmpdir.chdir()
     check_call(["git", "init"])
     check_call(["git", "add", "update_from_tag"])
@@ -256,7 +291,7 @@ def test_current_version_from_tag(tmpdir):
 
     with pytest.raises(SystemExit) as exc:
         # don't give current-version, that should come from tag
-        main(["patch", "update_from_tag"])
+        main(["patch"])
 
     assert tmpdir.join("update_from_tag").read() == "26.6.1"
     assert exc.value.code == 0
@@ -267,7 +302,14 @@ def test_current_version_from_tag_written_to_config_file(tmpdir):
     tmpdir.join("updated_also_in_config_file").write("14.6.0")
     tmpdir.chdir()
 
-    tmpdir.join(".bumpsemver.cfg").write("""[bumpsemver]""")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver]
+            [bumpsemver:plaintext:updated_also_in_config_file]
+        """
+        )
+    )
 
     check_call(["git", "init"])
     check_call(["git", "add", "updated_also_in_config_file"])
@@ -276,7 +318,7 @@ def test_current_version_from_tag_written_to_config_file(tmpdir):
 
     with pytest.raises(SystemExit) as exc:
         # don't give current-version, that should come from tag
-        main(["patch", "updated_also_in_config_file", "--commit", "--tag"])
+        main(["patch", "--commit", "--tag"])
 
     assert "14.6.1" == tmpdir.join("updated_also_in_config_file").read()
     assert "14.6.1" in tmpdir.join(".bumpsemver.cfg").read()
@@ -287,6 +329,16 @@ def test_current_version_from_tag_written_to_config_file(tmpdir):
 def test_override_vcs_current_version(tmpdir):
     # prepare
     tmpdir.join("contains_actual_version").write("6.7.8")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver]
+            current_version = 6.7.8
+            commit = True
+            [bumpsemver:plaintext:contains_actual_version]
+            """
+        ).strip()
+    )
     tmpdir.chdir()
     check_call(["git", "init"])
     check_call(["git", "add", "contains_actual_version"])
@@ -303,7 +355,7 @@ def test_override_vcs_current_version(tmpdir):
     with pytest.raises(SystemExit) as exc:
         # if we don't give current-version here, we get "AssertionError:
         # Did not find string 6.7.8 in file contains_actual_version"
-        main(["patch", "--current-version", "7.0.0", "contains_actual_version"])
+        main(["patch", "--current-version", "7.0.0"])
 
     assert "7.0.1" == tmpdir.join("contains_actual_version").read()
     assert exc.value.code == 0
@@ -312,6 +364,16 @@ def test_override_vcs_current_version(tmpdir):
 def test_read_version_tags_only(tmpdir):
     # prepare
     tmpdir.join("update_from_tag").write("29.6.0")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver]
+            current_version = 29.6.0
+            commit = True
+            [bumpsemver:plaintext:update_from_tag]
+            """
+        ).strip()
+    )
     tmpdir.chdir()
     check_call(["git", "init"])
     check_call(["git", "add", "update_from_tag"])
@@ -322,7 +384,7 @@ def test_read_version_tags_only(tmpdir):
 
     with pytest.raises(SystemExit) as exc:
         # don't give current-version, that should come from tag
-        main(["patch", "update_from_tag"])
+        main(["patch"])
 
     assert "29.6.1" == tmpdir.join("update_from_tag").read()
     assert exc.value.code == 0
@@ -332,6 +394,17 @@ def test_tag_name(tmpdir):
     tmpdir.chdir()
     check_call(["git", "init"])
     tmpdir.join("VERSION").write("31.1.1")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver]
+            current_version = 31.1.1
+            commit = True
+            [bumpsemver:plaintext:VERSION]
+            """
+        ).strip()
+    )
+
     check_call(["git", "add", "VERSION"])
     check_call(["git", "commit", "-m", "initial commit"])
 
@@ -343,7 +416,6 @@ def test_tag_name(tmpdir):
                 "31.1.1",
                 "--commit",
                 "--tag",
-                "VERSION",
                 "--tag-name",
                 "ReleasedVersion-{new_version}",
             ]
@@ -372,12 +444,13 @@ def test_message_from_config_file(tmpdir):
             tag: True
             message: {current_version} was old, {new_version} is new
             tag_name: from-{current_version}-to-{new_version}
+            [bumpsemver:plaintext:VERSION]
             """
         ).strip()
     )
 
     with pytest.raises(SystemExit) as exc:
-        main(["major", "VERSION"])
+        main(["major"])
 
     log = check_output(["git", "log", "-p"])
 
@@ -394,6 +467,14 @@ def test_unannotated_tag(tmpdir):
     tmpdir.chdir()
     check_call(["git", "init"])
     tmpdir.join("VERSION").write("42.3.1")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver:plaintext:VERSION]
+            """
+        ).strip()
+    )
+
     check_call(["git", "add", "VERSION"])
     check_call(["git", "commit", "-m", "initial commit"])
 
@@ -405,7 +486,6 @@ def test_unannotated_tag(tmpdir):
                 "42.3.1",
                 "--commit",
                 "--tag",
-                "VERSION",
                 "--tag-name",
                 "ReleasedVersion-{new_version}",
                 "--tag-message",
@@ -429,6 +509,14 @@ def test_annotated_tag(tmpdir):
     tmpdir.chdir()
     check_call(["git", "init"])
     tmpdir.join("VERSION").write("42.4.1")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver:plaintext:VERSION]
+            """
+        ).strip()
+    )
+
     check_call(["git", "add", "VERSION"])
     check_call(["git", "commit", "-m", "initial commit"])
 
@@ -440,7 +528,6 @@ def test_annotated_tag(tmpdir):
                 "42.4.1",
                 "--commit",
                 "--tag",
-                "VERSION",
                 "--tag-message",
                 "test {new_version}-tag",
             ]
@@ -448,13 +535,13 @@ def test_annotated_tag(tmpdir):
     assert "42.4.2" == tmpdir.join("VERSION").read()
 
     tag_out = check_output(["git", "tag"])
-    assert b"r42.4.2" in tag_out
+    assert b"v42.4.2" in tag_out
 
     describe_out = subprocess.check_output(["git", "describe"])
-    assert describe_out == b"r42.4.2\n"
+    assert describe_out == b"v42.4.2\n"
 
-    describe_out = subprocess.check_output(["git", "show", "r42.4.2"])
-    assert describe_out.startswith(b"tag r42.4.2\n")
+    describe_out = subprocess.check_output(["git", "show", "v42.4.2"])
+    assert describe_out.startswith(b"tag v42.4.2\n")
     assert b"test 42.4.2-tag" in describe_out
 
     assert exc.value.code == 0
@@ -464,6 +551,15 @@ def test_vcs_describe(tmpdir):
     tmpdir.chdir()
     check_call(["git", "init"])
     tmpdir.join("VERSION").write("42.5.1")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver]
+            [bumpsemver:plaintext:VERSION]
+            """
+        ).strip()
+    )
+
     check_call(["git", "add", "VERSION"])
     check_call(["git", "commit", "-m", "initial commit"])
 
@@ -475,7 +571,6 @@ def test_vcs_describe(tmpdir):
                 "42.5.1",
                 "--commit",
                 "--tag",
-                "VERSION",
                 "--tag-message",
                 "test {new_version}-tag",
             ]
@@ -483,7 +578,7 @@ def test_vcs_describe(tmpdir):
     assert "42.5.2" == tmpdir.join("VERSION").read()
 
     describe_out = subprocess.check_output(["git", "describe"])
-    assert b"r42.5.2\n" == describe_out
+    assert b"v42.5.2\n" == describe_out
     assert exc.value.code == 0
 
     with pytest.raises(SystemExit) as exc:
@@ -494,7 +589,6 @@ def test_vcs_describe(tmpdir):
                 "42.5.2",
                 "--commit",
                 "--tag",
-                "VERSION",
                 "--tag-name",
                 "ReleasedVersion-{new_version}",
                 "--tag-message",
@@ -504,7 +598,7 @@ def test_vcs_describe(tmpdir):
     assert "42.5.3" == tmpdir.join("VERSION").read()
 
     describe_only_annotated_out = subprocess.check_output(["git", "describe"])
-    assert describe_only_annotated_out.startswith(b"r42.5.2-1-g")
+    assert describe_only_annotated_out.startswith(b"v42.5.2-1-g")
 
     describe_all_out = subprocess.check_output(["git", "describe", "--tags"])
     assert b"ReleasedVersion-42.5.3\n" == describe_all_out
@@ -516,6 +610,7 @@ def test_utf8_message_from_config_file(tmpdir):
     tmpdir.chdir()
     check_call(["git", "init"])
     tmpdir.join("VERSION").write("10.10.0")
+
     check_call(["git", "add", "VERSION"])
     check_call(["git", "commit", "-m", "initial commit"])
 
@@ -525,12 +620,13 @@ def test_utf8_message_from_config_file(tmpdir):
         current_version = 10.10.0
         commit = True
         message = [{now}] [{utcnow} {utcnow:%YXX%mYY%d}]
+        [bumpsemver:plaintext:VERSION]
         """
     ).strip()
     tmpdir.join(".bumpsemver.cfg").write(initial_config)
 
     with pytest.raises(SystemExit) as exc:
-        main(["major", "VERSION"])
+        main(["major"])
 
     log = check_output(["git", "log", "-p"])
 
@@ -551,9 +647,16 @@ def test_commit_and_tag_from_below_vcs_root(tmpdir, monkeypatch):
 
     tmpdir.mkdir("subdir")
     monkeypatch.chdir(tmpdir.join("subdir"))
+    tmpdir.join("subdir/.bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver:plaintext:../VERSION]
+            """
+        ).strip()
+    )
 
     with pytest.raises(SystemExit) as exc:
-        main(["major", "--current-version", "30.0.3", "--commit", "../VERSION"])
+        main(["major", "--current-version", "30.0.3", "--commit"])
 
     assert "31.0.0" == tmpdir.join("VERSION").read()
     assert exc.value.code == 0
@@ -632,7 +735,7 @@ def test_subjunctive_dry_run_logging(tmpdir):
         (
             "bumpsemver.cli",
             "INFO",
-            "Would tag `r0.8.1` with message `build(repo): bumped version 0.8.0 \u2192 0.8.1` in Git and not signing",
+            "Would tag `v0.8.1` with message `build(repo): bumped version 0.8.0 \u2192 0.8.1` in Git and not signing",
         ),
     )
 
@@ -709,7 +812,7 @@ def test_log_commit_message_if_no_commit_tag_but_usable_vcs(tmpdir):
         (
             "bumpsemver.cli",
             "INFO",
-            "Would tag `r0.3.4` with message `build(repo): bumped version 0.3.3 \u2192 0.3.4` in Git and not signing",
+            "Would tag `v0.3.4` with message `build(repo): bumped version 0.3.3 \u2192 0.3.4` in Git and not signing",
         ),
     )
 
@@ -729,12 +832,13 @@ def test_regression_tag_name_with_hyphens(tmpdir):
             """
             [bumpsemver]
             current_version = 2014.10.22
+            [bumpsemver:plaintext:some_source.txt]
             """
         )
     )
 
     with pytest.raises(SystemExit) as exc:
-        main(["patch", "some_source.txt"])
+        main(["patch"])
 
     assert exc.value.code == 0
 

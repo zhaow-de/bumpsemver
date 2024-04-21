@@ -143,9 +143,7 @@ def _setup_test_folder(tmpdir, data_path, capsys):
 
 
 def test_all_in_one_positive(tmpdir, capsys):
-    data_path = os.path.abspath(
-        os.path.dirname(os.path.realpath(__file__)) + "/fixtures/yolla"
-    )
+    data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures/yolla")
     _setup_test_folder(tmpdir, data_path, capsys)
 
     with LogCapture() as log_capture, pytest.raises(SystemExit) as exc:
@@ -162,21 +160,14 @@ def test_all_in_one_positive(tmpdir, capsys):
     assert '"has-proto": "1.0.3"' in app_node_package
 
     app_node_package_lock = tmpdir.join("app/node/package-lock.json").read()
-    assert (
-        '  "name": "bumpsemver-node",\n  "version": "1.0.4",\n' in app_node_package_lock
-    )
-    assert (
-        '      "name": "bumpsemver-node",\n      "version": "1.0.4",\n'
-        in app_node_package_lock
-    )
+    assert '  "name": "bumpsemver-node",\n  "version": "1.0.4",\n' in app_node_package_lock
+    assert '      "name": "bumpsemver-node",\n      "version": "1.0.4",\n' in app_node_package_lock
     assert (
         '      "version": "1.0.3",\n      "resolved": "https://registry.npmjs.org/has-proto/-/has-proto-1.0.3.tgz",'
         in app_node_package_lock
     )
 
-    app_node_interesting_package = tmpdir.join(
-        "app/node/endswith-is-not-enough-package-lock.json"
-    ).read()
+    app_node_interesting_package = tmpdir.join("app/node/endswith-is-not-enough-package-lock.json").read()
     assert '"version": "1.0.3"' in app_node_interesting_package
 
     #
@@ -185,9 +176,7 @@ def test_all_in_one_positive(tmpdir, capsys):
     with open(data_path + "/app/node-do-not-version/package.json", "rt") as f:
         assert f.read() == tmpdir.join("app/node-do-not-version/package.json").read()
     with open(data_path + "/app/node-do-not-version/package-lock.json", "rt") as f:
-        assert (
-            f.read() == tmpdir.join("app/node-do-not-version/package-lock.json").read()
-        )
+        assert f.read() == tmpdir.join("app/node-do-not-version/package-lock.json").read()
 
     #
     # app/python
@@ -231,9 +220,7 @@ def test_all_in_one_positive(tmpdir, capsys):
 
 
 def test_all_in_one_negative(tmpdir, capsys):
-    data_path = os.path.abspath(
-        os.path.dirname(os.path.realpath(__file__)) + "/fixtures/yolla"
-    )
+    data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures/yolla")
     _setup_test_folder(tmpdir, data_path, capsys)
 
     with LogCapture() as log_capture, pytest.raises(SystemExit) as exc:

@@ -50,8 +50,9 @@ def test_list_files_not_git_no_gitignore(tmpdir):
     tmpdir.mkdir("dir1")
     tmpdir.mkdir("dir2").join("file2").write("#")
     actual = Git.list_files()
+    actual.sort()
 
-    assert actual == ["file1", "dir2/file2"]
+    assert actual == ["dir2/file2", "file1"]
 
 
 def test_list_files_not_git_with_gitignore(tmpdir):
@@ -61,8 +62,9 @@ def test_list_files_not_git_with_gitignore(tmpdir):
     tmpdir.mkdir("dir1")
     tmpdir.mkdir("dir2").join("file2").write("#")
     actual = Git.list_files()
+    actual.sort()
 
-    assert actual == [".gitignore", "file1", "dir2/file2"]
+    assert actual == [".gitignore", "dir2/file2", "file1"]
 
 
 def test_list_files_with_git_no_gitignore(tmpdir):
@@ -124,7 +126,11 @@ def test_discovery_unknown_prop(tmpdir):
 
     assert exc.value.code == 4
     log_capture.check_present(
-        ("bumpsemver.cli", "ERROR", "Invalid config file. Unknown keys ['unknown'] in section 'bumpsemver:discovery'")
+        (
+            "bumpsemver.cli",
+            "ERROR",
+            "Invalid config file. Unknown keys ['unknown'] in section 'bumpsemver:discovery'",
+        )
     )
     assert exc.value.code == 4
 
@@ -137,7 +143,9 @@ def _setup_test_folder(tmpdir, data_path, capsys):
 
 
 def test_all_in_one_positive(tmpdir, capsys):
-    data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures/yolla")
+    data_path = os.path.abspath(
+        os.path.dirname(os.path.realpath(__file__)) + "/fixtures/yolla"
+    )
     _setup_test_folder(tmpdir, data_path, capsys)
 
     with LogCapture() as log_capture, pytest.raises(SystemExit) as exc:
@@ -154,14 +162,21 @@ def test_all_in_one_positive(tmpdir, capsys):
     assert '"has-proto": "1.0.3"' in app_node_package
 
     app_node_package_lock = tmpdir.join("app/node/package-lock.json").read()
-    assert '  "name": "bumpsemver-node",\n  "version": "1.0.4",\n' in app_node_package_lock
-    assert '      "name": "bumpsemver-node",\n      "version": "1.0.4",\n' in app_node_package_lock
+    assert (
+        '  "name": "bumpsemver-node",\n  "version": "1.0.4",\n' in app_node_package_lock
+    )
+    assert (
+        '      "name": "bumpsemver-node",\n      "version": "1.0.4",\n'
+        in app_node_package_lock
+    )
     assert (
         '      "version": "1.0.3",\n      "resolved": "https://registry.npmjs.org/has-proto/-/has-proto-1.0.3.tgz",'
         in app_node_package_lock
     )
 
-    app_node_interesting_package = tmpdir.join("app/node/endswith-is-not-enough-package-lock.json").read()
+    app_node_interesting_package = tmpdir.join(
+        "app/node/endswith-is-not-enough-package-lock.json"
+    ).read()
     assert '"version": "1.0.3"' in app_node_interesting_package
 
     #
@@ -170,7 +185,9 @@ def test_all_in_one_positive(tmpdir, capsys):
     with open(data_path + "/app/node-do-not-version/package.json", "rt") as f:
         assert f.read() == tmpdir.join("app/node-do-not-version/package.json").read()
     with open(data_path + "/app/node-do-not-version/package-lock.json", "rt") as f:
-        assert f.read() == tmpdir.join("app/node-do-not-version/package-lock.json").read()
+        assert (
+            f.read() == tmpdir.join("app/node-do-not-version/package-lock.json").read()
+        )
 
     #
     # app/python
@@ -214,7 +231,9 @@ def test_all_in_one_positive(tmpdir, capsys):
 
 
 def test_all_in_one_negative(tmpdir, capsys):
-    data_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + "/fixtures/yolla")
+    data_path = os.path.abspath(
+        os.path.dirname(os.path.realpath(__file__)) + "/fixtures/yolla"
+    )
     _setup_test_folder(tmpdir, data_path, capsys)
 
     with LogCapture() as log_capture, pytest.raises(SystemExit) as exc:

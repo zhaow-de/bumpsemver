@@ -1,7 +1,5 @@
 from typing import List, Tuple, Union
 
-from typing_extensions import Buffer
-
 
 class BumpVersionError(Exception):
     """Custom base class for all BumpVersion exception types."""
@@ -14,7 +12,7 @@ class InvalidConfigSectionError(BumpVersionError):
 
 
 class WorkingDirectoryIsDirtyError(BumpVersionError):
-    def __init__(self, lines: List[Buffer]):
+    def __init__(self, lines):
         message = "Git working directory is not clean:\n{}".format(b"\n".join(lines).decode())
         super().__init__(message)
         self.message = message

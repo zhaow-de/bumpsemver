@@ -7,7 +7,7 @@
 [![GitHub Actions](https://github.com/zhaow-de/bumpsemver/workflows/CI/badge.svg)](https://github.com/zhaow-de/bumpsemver/actions)
 
 
-Current version: **v2.2.0**
+Current version: **v2.2.1**
 
 ## Table of contents
 

@@ -165,19 +165,17 @@ def _load_configuration(config_file, explicit_config, defaults):
     return config, True, config_newlines, files, ignored_for_discovery
 
 
-def _update_config_file(config, config_file, config_newlines, config_file_exists, new_version, dry_run):
+def _update_config_file(config, config_file, config_newlines, new_version, dry_run):
     config.set("bumpsemver", "current_version", new_version)
     config.remove_option("bumpsemver", "new_version")
     new_config = io.StringIO()
     try:
-        write_to_config_file = (not dry_run) and config_file_exists
-
-        logger.info(f"{'Would write' if not write_to_config_file else 'Writing'} to config file {config_file}:")
+        logger.info(f"{'Would write' if dry_run else 'Writing'} to config file {config_file}:")
 
         config.write(new_config)
         logger.info(new_config.getvalue())
 
-        if write_to_config_file:
+        if not dry_run:
             with open(config_file, "wt", encoding="utf-8", newline=config_newlines) as config_fp:
                 config_fp.write(new_config.getvalue().strip() + "\n")
 

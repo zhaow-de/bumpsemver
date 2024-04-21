@@ -308,18 +308,22 @@ def test_non_matching_search_does_not_modify_file(tmpdir):
 
 def test_search_replace_cli(tmpdir):
     tmpdir.join("file89").write("My birthday: 3.5.98\nCurrent version: 3.5.98")
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver:plaintext:file89]
+            search = Current version: {current_version}
+            replace = Current version: {new_version}
+            """
+        ).strip()
+    )
     tmpdir.chdir()
     with pytest.raises(SystemExit) as exc:
         main(
             [
                 "--current-version",
                 "3.5.98",
-                "--search",
-                "Current version: {current_version}",
-                "--replace",
-                "Current version: {new_version}",
                 "minor",
-                "file89",
             ]
         )
 
@@ -714,6 +718,17 @@ def test_wrong_version_pattern_in_cfg(tmpdir, wrong_version_pattern):
 
 def test_update_mixed_newlines(tmpdir):
     tmpdir.chdir()
+    tmpdir.join(".bumpsemver.cfg").write(
+        dedent(
+            """
+            [bumpsemver]
+
+            [bumpsemver:plaintext:file104]
+            search = Current version: {current_version}
+            replace = Current version: {new_version}
+            """
+        ).strip()
+    )
     # the file operation helper by pytest is too intelligent to swallow these inconsistencies.
     # here we use lower level functions
     with open(tmpdir.join("file104"), "wt", newline="") as f_out:
@@ -724,12 +739,7 @@ def test_update_mixed_newlines(tmpdir):
             [
                 "--current-version",
                 "100.5.98",
-                "--search",
-                "Current version: {current_version}",
-                "--replace",
-                "Current version: {new_version}",
                 "minor",
-                "file104",
             ]
         )
 

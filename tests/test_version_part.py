@@ -1,4 +1,4 @@
-from bumpsemver.version_part import NumericVersionPartConfiguration, VersionPart
+from bumpsemver.version_part import NumericVersionPartConfiguration, VersionPart, Version, VersionConfig
 
 vpc = NumericVersionPartConfiguration()
 
@@ -37,3 +37,9 @@ def test_version_part_repr():
         repr(VersionPart(vpc.first_value, vpc))
         == f"<bumpsemver.VersionPart:NumericVersionPartConfiguration:{vpc.first_value}>"
     )
+
+
+def test_version_repr():
+    vc = VersionConfig()
+    version = vc.parse("1.2.3")
+    assert repr(version) == "<bumpsemver.Version:major=1, minor=2, patch=3>"

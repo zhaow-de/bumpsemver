@@ -113,3 +113,9 @@ class DiscoveryError(BumpVersionError):
         )
         super().__init__(message)
         self.message = message
+
+
+class InvalidArgumentsError(BumpVersionError):
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message

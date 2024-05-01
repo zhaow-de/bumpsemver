@@ -97,6 +97,12 @@ def _parse_sections(config: RawConfigParser, defaults, sections) -> Tuple[List[F
         filename = section_type.get("value")
         section_props = dict(config.items(section_name))
 
+        file_type_override = False
+        if file_type.endswith("!"):
+            logger.warning(f"Section [{section_name}] bypasses file type detection")
+            file_type = file_type.rstrip("!")
+            file_type_override = True
+
         if not [x for x in file_types_config.keys() if x == file_type]:
             raise InvalidConfigSectionError(
                 f"Invalid config file. Unknown file type '{file_type}' in section '{section_name}'"
@@ -105,7 +111,7 @@ def _parse_sections(config: RawConfigParser, defaults, sections) -> Tuple[List[F
         type_info = file_types_config.get(file_type)
 
         _check_section_config(section_name, list(type_info.props.keys()), [*section_props])
-        if file_type == "file" or file_type == "plaintext":
+        if not file_type_override and (file_type == "file" or file_type == "plaintext"):
             _, ext = os.path.splitext(filename)
             ext = ext.lstrip(".").lower()
             if ext in ["json", "toml", "yaml", "yml"]:

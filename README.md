@@ -7,7 +7,7 @@
 [![GitHub Actions](https://github.com/zhaow-de/bumpsemver/workflows/CI/badge.svg)](https://github.com/zhaow-de/bumpsemver/actions)
 
 
-Current version: **v2.2.1**
+Current version: **v2.3.0**
 
 ## Table of contents
 
@@ -58,7 +58,7 @@ defaults.
 ## Command Line Interface
 
 ```bash
-bumpsemver [options] part [file]
+bumpsemver [options] part
 ```
     
 ##### **`options`**    _**(optional)**_
@@ -83,22 +83,10 @@ Print help and exit.
 
 The part of the version to increase. As we support semver only, the valid values include: `major`, `minor`, and `patch`.
 
-For example, bumping file `src/VERSION` from 0.5.1 to 0.6.0:
+For example, bumping from 0.5.1 to 0.6.0:
 
 ```bash
-bumpsemver --current-version 0.5.1 minor src/VERSION
-```
-
-##### **`file`**    _**(optional).**_    _**default**_: none
-
-The file that will be modified.
-
-If not given, the list of `[bumpsemver:*:…]` sections from the configuration file will be used.
-If no files are mentioned on the configuration file either, no files will be modified.
-
-For example, bumping file `setup.py` from 1.1.9 to 2.0.0:
-```
-bumpsemver --current-version 1.1.9 major setup.py
+bumpsemver --current-version 0.5.1 minor
 ```
 
 ## Configuration file
@@ -218,7 +206,7 @@ We do have the use case that one file has multiple places to change, a popular e
 }
 ```
 We need two config sections for the same file in this case, but INI format does not allow duplicated section names.
-To make it work we could append a description between parens to the
+To make it work, we could append a description between parens to the
 `type` keyword: `[bumpsemver:plaintext(special one):…]`. It does not matter what inside the parens, just make it unique.
 For the example below, the two patterns will be applied separately to the same file `README.md`:
 ```ini
@@ -257,6 +245,11 @@ The supported file types are:
 * json
 * yaml
 * toml
+
+`bumpsemver` will use the file extension to determine the file type and throw an error if the detected file type 
+mismatches with the specified one.
+This behavior can be overridden by specifying the file type with a `!` suffix.
+For example, `[bumpsemver:json!:config.yaml]` will treat `config.yaml` as a JSON file.
 
 #### Plain text file
 

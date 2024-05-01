@@ -49,7 +49,7 @@ order-by-type = true
 
 [tool.poetry]
 name = "bumpsemver"
-version = "2.2.1"
+version = "2.3.0"
 description = "Bump semver for git repos with a single command"
 readme = "README.md"
 authors = [ "Zhao Wang <zhaow.km@gmail.com>" ]
